@@ -1958,6 +1958,16 @@ async function twApi(path, body) {
   if (!r.ok) throw new Error(d.message || "서버 오류가 발생했어요.");
   return d;
 }
+// 전화번호(휴대폰·지역번호·+82 형식, 구분 기호/공백 포함)가 들어 있으면 경고창을 띄우고 true를 반환합니다.
+function warnPhone(text) {
+  const t = String(text || "").replace(/[\s.\-_()·]/g, "").replace(/^\+?82/, "0");
+  if (/(01[016789]\d{7,8}|0(2|[3-6][1-5]|70|80|50\d?)\d{7,8})/.test(t) || /\d{3}[\s.\-]\d{3,4}[\s.\-]\d{4}/.test(String(text || ""))) {
+    alert("⚠️ 전화번호가 포함되어 있어요!\n개인정보 보호를 위해 전화번호는 입력하지 마세요.");
+    return true;
+  }
+  return false;
+}
+window.warnPhone = warnPhone;
 function twStatus(msg, isErr) { $("twStatus").textContent = msg || ""; $("twStatus").classList.toggle("err", !!isErr); }
 function twSetBusy(on, msg) {
   tw.busy = on; syncAiLoading();
@@ -2036,6 +2046,7 @@ async function twPlayer(kind) {
   if (tw.busy || !tw.state || tw.state.finished) return;
   const text = $("twText").value.trim();
   if (!text) { twStatus(kind === "guess" ? "정답이라고 생각하는 낱말을 입력하세요." : "질문을 입력하세요.", true); $("twText").focus(); return; }
+  if (warnPhone(text)) { $("twText").focus(); return; }
   const gen = tw.gen; playSfx("click");
   const ui = twAddEntry("me", kind === "guess" ? `정답은 "${text}"!` : text);
   $("twText").value = "";
@@ -2316,10 +2327,11 @@ $("twentyHome").addEventListener("click", () => { tw.gen++; hideGenerating(true)
     if (s.busy) return;
     const inp = mk("input"); inp.maxLength = 100; inp.placeholder = "예/아니요로 답할 수 있는 질문 또는 정답";
     const val = () => inp.value.trim();
+    const send = kind => { if (val() && !warnPhone(val())) sock.emit("twenty:turn", { kind, text: val() }); };
     ctl.append(mk("p", "내 차례예요!", "online-status"), inp,
-      mk("button", "질문하기", "online-primary", () => { if (val()) sock.emit("twenty:turn", { kind: "question", text: val() }); }),
-      mk("button", "정답 맞히기", "online-secondary", () => { if (val()) sock.emit("twenty:turn", { kind: "guess", text: val() }); }));
-    inp.addEventListener("keydown", ev => { if (ev.key === "Enter" && val()) sock.emit("twenty:turn", { kind: "question", text: val() }); });
+      mk("button", "질문하기", "online-primary", () => send("question")),
+      mk("button", "정답 맞히기", "online-secondary", () => send("guess")));
+    inp.addEventListener("keydown", ev => { if (ev.key === "Enter") send("question"); });
   }  $o("twentyAgain").addEventListener("click", () => { if (isHost && sock) sock.emit("game:start"); });
   $o("onlineEntry").addEventListener("click", () => { overlay.hidden = false; });
   $o("onlineClose").addEventListener("click", () => { overlay.hidden = true; if (sock) { sock.emit("room:leave"); resetOnline(); } });
