@@ -1960,22 +1960,29 @@ async function twApi(path, body) {
 }
 // 전화번호(휴대폰·지역번호·+82 형식, 구분 기호/공백 포함)가 들어 있으면 경고창을 띄우고 true를 반환합니다.
 function warnPhone(text) {
-  const t = String(text || "").replace(/[\s.\-_()·]/g, "").replace(/^\+?82/, "0");
-  if (/(01[016789]\d{7,8}|0(2|[3-6][1-5]|70|80|50\d?)\d{7,8})/.test(t) || /\d{3}[\s.\-]\d{3,4}[\s.\-]\d{4}/.test(String(text || ""))) {
-    showPhonePopup();
+  const raw = String(text || "");
+  // 주민등록번호: 생년월일 6자리 + 성별/세기 1자리(1~8) + 6자리 (구분 기호/공백 허용)
+  if (/(?<!\d)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])[\s.\-_]*[1-8](?:[\s.\-_]*\d){6}(?!\d)/.test(raw)) {
+    showPhonePopup("주민등록번호");
+    return true;
+  }
+  const t = raw.replace(/[\s.\-_()·]/g, "").replace(/^\+?82/, "0");
+  if (/(01[016789]\d{7,8}|0(2|[3-6][1-5]|70|80|50\d?)\d{7,8})/.test(t) || /\d{3}[\s.\-]\d{3,4}[\s.\-]\d{4}/.test(raw)) {
+    showPhonePopup("전화번호");
     return true;
   }
   return false;
 }
-// 전화번호 경고 팝업 (alert 대신 화면 가운데에 표시)
-function showPhonePopup() {
+// 개인정보(전화번호·주민등록번호) 경고 팝업 (alert 대신 화면 가운데에 표시)
+function showPhonePopup(kind) {
+  kind = kind || "전화번호";
   if (document.getElementById("phoneWarnPopup")) return;
   const ov = document.createElement("div");
   ov.id = "phoneWarnPopup"; ov.className = "rules-overlay"; ov.setAttribute("role", "alertdialog"); ov.setAttribute("aria-modal", "true");
   ov.innerHTML = '<div style="width:min(380px,100%);padding:1.6rem 1.4rem;text-align:center;background:var(--paper);color:var(--ink);border:var(--bw) solid var(--ink);border-radius:var(--r-lg);box-shadow:0 6px 0 var(--ink),0 24px 50px rgba(0,0,0,.25)">'
     + '<div style="font-size:2.6rem;line-height:1">⚠️</div>'
-    + '<h3 style="margin:.5rem 0 .4rem;font-family:var(--font-display);color:var(--rose-d);font-size:1.4rem">주의! 전화번호가 포함되어 있어요</h3>'
-    + '<p style="margin:0 0 1.1rem;color:var(--brown);line-height:1.5">개인정보 보호를 위해<br>전화번호는 입력하지 마세요.</p>'
+    + '<h3 style="margin:.5rem 0 .4rem;font-family:var(--font-display);color:var(--rose-d);font-size:1.4rem">주의! ' + kind + '가 포함되어 있어요</h3>'
+    + '<p style="margin:0 0 1.1rem;color:var(--brown);line-height:1.5">개인정보 보호를 위해<br>' + kind + '는 입력하지 마세요.</p>'
     + '<button type="button" style="padding:.6rem 2rem;font:inherit;font-weight:700;cursor:pointer;color:#fff;background:var(--rose);border:var(--bw) solid var(--ink);border-radius:var(--r-sm);box-shadow:0 3px 0 var(--ink)">확인</button></div>';
   const close = () => { ov.remove(); document.removeEventListener("keydown", onKey, true); };
   const onKey = e => { if (e.key === "Escape" || e.key === "Enter") { e.preventDefault(); e.stopPropagation(); close(); } };
