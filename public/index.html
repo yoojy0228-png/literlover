@@ -1971,18 +1971,26 @@ function warnPhone(text) {
     showPhonePopup("전화번호");
     return true;
   }
+  // 생년월일 단독 입력: 8자리(20130218, 2013-02-18) 또는 6자리(130218, 13.02.18)
+  if (/(?<!\d)(19|20)\d{2}[.\-\/]?(0[1-9]|1[0-2])[.\-\/]?(0[1-9]|[12]\d|3[01])(?!\d)/.test(raw)
+    || /(?<!\d)\d{2}[.\-\/]?(0[1-9]|1[0-2])[.\-\/]?(0[1-9]|[12]\d|3[01])(?!\d)/.test(raw)) {
+    showPhonePopup("생년월일");
+    return true;
+  }
   return false;
 }
 // 개인정보(전화번호·주민등록번호) 경고 팝업 (alert 대신 화면 가운데에 표시)
 function showPhonePopup(kind) {
   kind = kind || "전화번호";
+  const batchim = (kind.charCodeAt(kind.length - 1) - 0xAC00) % 28 !== 0;
+  const iga = batchim ? "이" : "가", eunneun = batchim ? "은" : "는";
   if (document.getElementById("phoneWarnPopup")) return;
   const ov = document.createElement("div");
   ov.id = "phoneWarnPopup"; ov.className = "rules-overlay"; ov.setAttribute("role", "alertdialog"); ov.setAttribute("aria-modal", "true");
   ov.innerHTML = '<div style="width:min(380px,100%);padding:1.6rem 1.4rem;text-align:center;background:var(--paper);color:var(--ink);border:var(--bw) solid var(--ink);border-radius:var(--r-lg);box-shadow:0 6px 0 var(--ink),0 24px 50px rgba(0,0,0,.25)">'
     + '<div style="font-size:2.6rem;line-height:1">⚠️</div>'
-    + '<h3 style="margin:.5rem 0 .4rem;font-family:var(--font-display);color:var(--rose-d);font-size:1.4rem">주의! ' + kind + '가 포함되어 있어요</h3>'
-    + '<p style="margin:0 0 1.1rem;color:var(--brown);line-height:1.5">개인정보 보호를 위해<br>' + kind + '는 입력하지 마세요.</p>'
+    + '<h3 style="margin:.5rem 0 .4rem;font-family:var(--font-display);color:var(--rose-d);font-size:1.4rem">주의! ' + kind + iga + ' 포함되어 있어요</h3>'
+    + '<p style="margin:0 0 1.1rem;color:var(--brown);line-height:1.5">개인정보 보호를 위해<br>' + kind + eunneun + ' 입력하지 마세요.</p>'
     + '<button type="button" style="padding:.6rem 2rem;font:inherit;font-weight:700;cursor:pointer;color:#fff;background:var(--rose);border:var(--bw) solid var(--ink);border-radius:var(--r-sm);box-shadow:0 3px 0 var(--ink)">확인</button></div>';
   const close = () => { ov.remove(); document.removeEventListener("keydown", onKey, true); };
   const onKey = e => { if (e.key === "Escape" || e.key === "Enter") { e.preventDefault(); e.stopPropagation(); close(); } };
