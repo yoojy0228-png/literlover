@@ -99,8 +99,8 @@ function finishTwenty(r, winner){
 }
 // 새 판 시작: Claude가 키워드를 고른다. 실패하면 준비된 키워드를 쓴다.
 async function startTwentyRound(r, t){
-  let kw; try{kw=await AIG.generateKeyword();}catch(e){console.error('온라인 스무고개 키워드 생성 실패, 준비된 목록 사용:',e.message);kw=AIG.KEYWORDS[crypto.randomInt(AIG.KEYWORDS.length)];}
-  AIG.recentWords.push(kw.word); if(AIG.recentWords.length>15)AIG.recentWords.shift();
+  let kw; try{kw=await AIG.generateKeyword();}catch(e){console.error('온라인 스무고개 키워드 생성 실패, 준비된 목록 사용:',e.message);kw=AIG.pickFallbackKeyword();}
+  AIG.rememberWord(kw.word);
   if(r.twenty!==t)return; t.kw=kw; emitTwenty(r);
 }
 function boxEdges(row,col){return [`h-${row}-${col}`,`h-${row+1}-${col}`,`v-${row}-${col}`,`v-${row}-${col+1}`];}
