@@ -2,7 +2,11 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#fff9ee">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="format-detection" content="telephone=no">
 <title>리터러버 · AI 리터러시 + 리트리버</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Jua&display=swap" rel="stylesheet">
@@ -630,6 +634,167 @@ footer{padding:.5rem 0 .7rem}
 /* 전체 글씨를 얇게 */
 body,body *{font-weight:200!important}
 b,strong,h1,h2,h3{font-weight:300!important}
+
+/* ==========================================================
+   모바일 최적화
+   ========================================================== */
+/* 100dvh를 모르는 옛 브라우저용 대체 높이 */
+@supports not (height:100dvh){
+  body,.app{height:100vh}
+  .rules-poster{max-height:92vh}
+  .records-card{max-height:min(88vh,850px)}
+}
+/* 터치: 더블탭 확대 없이 바로 반응, 당겨서 새로고침 방지 */
+html,body{overscroll-behavior:none}
+.screen.active,.rules-poster,.records-card,#onlineOverlay,.tw-log,.menu-dropdown{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+button,a,input,select,label,[role="button"],.territory-board svg,#onlineDotsCanvas{touch-action:manipulation}
+svg [role="button"]{-webkit-tap-highlight-color:transparent}
+button,.topic-card,.choice{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+/* iOS: 16px보다 작은 입력창은 누를 때 화면이 확대되므로 최소 16px */
+input,select,textarea{font-size:max(16px,1.05rem)!important}
+/* 노치·홈 바 영역 피하기 */
+.app{padding-left:max(clamp(14px,2.6vw,36px),env(safe-area-inset-left));padding-right:max(clamp(14px,2.6vw,36px),env(safe-area-inset-right));padding-top:max(clamp(10px,1.6vw,20px),env(safe-area-inset-top));padding-bottom:env(safe-area-inset-bottom)}
+#onlineOverlay{padding:max(clamp(12px,3vw,32px),env(safe-area-inset-top)) max(clamp(12px,3vw,32px),env(safe-area-inset-right)) max(clamp(12px,3vw,32px),env(safe-area-inset-bottom)) max(clamp(12px,3vw,32px),env(safe-area-inset-left))}
+#aiLoading{bottom:max(1rem,env(safe-area-inset-bottom))}
+.menu-dropdown{max-height:calc(100dvh - 5.5rem);overflow-y:auto}
+
+/* 손가락 터치 기기: 누른 뒤 hover 모양이 남지 않게 */
+@media (hover:none){
+  .primary:hover:not(:disabled),.secondary:hover:not(:disabled),.online-primary:hover:not(:disabled),.online-secondary:hover:not(:disabled),#closeRecords:hover,
+  #onlineEntry:hover,.menu-toggle:hover,.topic-card:hover,.choice:hover,.step-btn:hover:not(:disabled),.online-option:hover:not(:disabled){transform:none;filter:none}
+  .topic-card:hover{box-shadow:0 7px 0 var(--ink)}
+  .choice:hover:not(.selected){border-color:var(--line-2);box-shadow:0 5px 0 var(--line-2)}
+  .online-option:hover:not(:disabled){border-color:var(--line-2);background:var(--card);box-shadow:0 4px 0 var(--line-2)}
+  .answer:hover:not(:disabled){background:var(--blue-l)}
+  .answer.pink:hover:not(:disabled){background:var(--rose-l)}
+  .menu-dropdown>button:hover,.font-size-buttons button:hover,.tw-chips button:hover{background:var(--card-2);border-color:var(--line)}
+}
+
+/* 태블릿·휴대폰 공통 */
+@media (max-width:860px){
+  /* 가운데 정렬된 설정 화면이 넘칠 때 위쪽이 잘리지 않게 */
+  .screen.setup.active{justify-content:flex-start}
+  .screen.setup.active>.setup-card{margin-block:auto}
+  /* 도트 앤 박스: 판을 손가락으로 고르기 쉬운 크기로 */
+  .territory-board{width:min(100%,max(250px,calc(100dvh - 430px)))}
+  .territory-board-wrap{padding:.5rem}
+}
+
+/* 휴대폰 */
+@media (max-width:600px){
+  header{min-height:2.8rem;padding-bottom:6px}
+  .brand-paw{width:2.1rem;height:2.1rem}
+  .logo{font-size:1.4rem}
+  #onlineEntry{min-height:2.6rem;padding:.3rem .9rem}
+  .menu-toggle{width:2.6rem;height:2.6rem}
+  footer{font-size:.78rem;padding:.4rem 0 .5rem}
+
+  /* 버튼: 손가락 크기는 유지하되 화면에 맞게 */
+  .primary,.online-primary{min-height:3.1rem;padding:.5rem 1.1rem;font-size:1.1rem}
+  .secondary,.online-secondary,#closeRecords{min-height:2.9rem;padding:.45rem 1rem;font-size:1rem}
+  .actions{gap:.6rem}
+  .actions .secondary{flex:none}
+
+  /* 설정 화면 */
+  .setup-head h1{font-size:1.5rem}
+  .topic-chip{font-size:1.3rem;padding:.1rem .8rem}
+  #modeScreen .setup-head .muted{font-size:1.05rem}
+  .panel{padding:1rem .9rem;border-radius:var(--r)}
+  .choices{gap:.5rem}
+  .ai-stepper{min-height:0;padding:.9rem .7rem}
+
+  /* 규칙 안내 */
+  .rules-overlay{padding:max(.6rem,env(safe-area-inset-top)) .6rem max(.6rem,env(safe-area-inset-bottom))}
+  .rules-poster{max-height:calc(100dvh - 1.2rem);padding:1rem .9rem}
+  .rule-steps{grid-template-columns:1fr 1fr;gap:1rem .6rem}
+  .rule-step{padding:.8rem .55rem .6rem}
+  .rule-step .t{font-size:.85rem}
+  .rule-tab{min-height:2.8rem;padding:.3rem .3rem}
+
+  /* 산성비 퀴즈 */
+  #game.active{gap:.45rem}
+  .hud{gap:.4rem}
+  .battle{gap:.4rem}
+  .bcard{padding:.35rem .7rem;font-size:.9rem}
+  .bcard strong{font-size:1.3rem}
+  .stat span{font-size:.72rem;letter-spacing:.05em}
+  .arena{border-radius:var(--r)}
+  .question-area{top:8px;left:8px;right:8px}
+  #question{margin:.4rem auto .25rem;padding:.55rem .75rem;font-size:1.05rem;line-height:1.4}
+  #subquestion{font-size:.85rem}
+  .topic{font-size:.8rem}
+  .lane-label{font-size:.78rem}
+  .answer{min-height:76px;padding:.6rem .45rem;border-radius:16px}
+  .answer .txt{font-size:1rem;line-height:1.35}
+  .controls{gap:.4rem}
+  .feedback{font-size:1rem;min-height:1.4rem}
+  #quit{min-height:2.6rem;padding:.3rem .9rem;font-size:.95rem}
+
+  /* 결과 화면: 고정 배치를 풀고 위에서 아래로 스크롤 */
+  #result.screen.setup.active{overflow-y:auto;padding-top:.4rem}
+  #result.screen.setup.active .setup-card{width:100%;height:auto;max-height:none}
+  #result .setup-head{padding-top:0}
+  #result #resultTitle{font-size:2rem}
+  #result #resultClosing{position:static;display:block;max-width:100%!important;margin:.4rem 0 0!important;padding:.5rem .8rem!important;font-size:1.1rem!important;text-align:center}
+  #result .result.score-only{position:static;padding:.6rem 1rem!important}
+  #result .result.score-only span{font-size:1.15rem}
+  #result .result.score-only strong{font-size:2rem}
+  #result .review-list{flex-direction:column;align-items:stretch;max-height:none;overflow:visible}
+  #result .review{flex:none;min-width:0;overflow:visible}
+  #result .review h3{font-size:1.05rem}
+  #result .review p{font-size:.95rem}
+
+  /* 도트 앤 박스 · 스무고개 머리 */
+  .screen-head{align-items:center}
+  .screen-head h1{font-size:1.25rem}
+  #territoryHome,#twentyHome{min-height:2.5rem;padding:.3rem .8rem;font-size:.9rem;white-space:nowrap}
+  .territory-stats{grid-template-columns:repeat(auto-fit,minmax(6.5rem,1fr));gap:.35rem}
+  .territory-player{padding:.25rem .5rem;font-size:.82rem}
+  .territory-player strong{font-size:1rem}
+  .territory-answer-row{gap:.5rem}
+  .territory-answer-row .primary{min-height:3.2rem;font-size:1.15rem}
+
+  /* 스무고개: 비밀 키워드와 남은 기회를 한 줄로 두어 대화창이 위로 오게 */
+  .twenty-side{grid-template-columns:1fr 1fr;gap:.45rem}
+  .tw-card{padding:.6rem .65rem;border-radius:var(--r)}
+  .tw-pattern{margin:.35rem 0 0;font-size:1.35rem;letter-spacing:.1em}
+  .tw-len,.tw-field{font-size:.8rem;margin-top:.25rem}
+  .tw-meter{padding:.3rem .4rem}
+  .tw-meter-head{font-size:.85rem}
+  .tw-meter-head b{font-size:1.1rem}
+  .tw-pips i{width:.5rem;height:.5rem}
+  .tw-giveup{min-height:2.5rem!important;font-size:.9rem!important}
+  .tw-log{height:auto;min-height:42dvh;padding:.7rem}
+  .tw-bubble{font-size:.98rem;padding:.55rem .8rem}
+  .tw-input{padding:.6rem .6rem max(.7rem,env(safe-area-inset-bottom))}
+  .tw-actions{gap:.45rem;margin-top:.5rem}
+  #twEnd .tw-end-card{padding:1.4rem 1rem}
+  #twEnd .tw-end-icon{font-size:3.2rem}
+  #twEnd .tw-reveal b{font-size:1.8rem}
+  #twEnd .tw-end-desc{font-size:1rem}
+  #twEnd .closing-line{font-size:1.15rem;padding:.6rem .8rem}
+  .tw-end-card{padding:1.2rem 1rem}
+
+  /* 온라인 대전 · 전적 */
+  .online-card{padding:1rem .85rem;border-radius:var(--r)}
+  .online-option{min-height:3.2rem;font-size:1rem;padding:.6rem .8rem}
+  #onlineQuestion{font-size:1.1rem;padding:.8rem .9rem}
+  .records-head h2{font-size:1.3rem}
+  .records-metric strong{font-size:1.1rem}
+}
+
+/* 가로로 눕힌 휴대폰: 높이가 낮으니 머리·여백을 줄임 */
+@media (max-height:500px) and (orientation:landscape){
+  header{min-height:2.4rem;padding-bottom:4px}
+  .menu-toggle,#onlineEntry{min-height:2.3rem}
+  .menu-toggle{width:2.3rem;height:2.3rem}
+  footer{display:none}
+  .home-logo img{max-height:30dvh}
+  .topic-card .ic{height:3rem}
+  .choice{min-height:5rem}
+  .twenty-main{height:auto}
+  .tw-log{min-height:55dvh}
+}
 </style>
 </head>
 <body data-screen="home">
@@ -1216,6 +1381,7 @@ function show(id) {
   $(id).classList.add("active");
   document.body.dataset.screen = id; // 화면별 헤더·푸터 표시를 CSS에서 조절
   window.scrollTo(0, 0);
+  $(id).scrollTop = 0; // 화면마다 따로 스크롤되므로 새로 열 때 맨 위부터
 }
 
 const AI_LEVEL = { easy: { aiDelay: 4300, aiChance: .45 }, medium: { aiDelay: 2600, aiChance: .70 }, hard: { aiDelay: 1200, aiChance: .90 } };
@@ -1419,15 +1585,26 @@ updateSetupLabels();
 function fitQuestionLayout() {
   const area = document.querySelector(".question-area"), lanes = document.querySelector(".lanes"), arena = $("arena");
   if (!area || !lanes || !arena || !$("game").classList.contains("active")) return;
-  const mobile = window.matchMedia("(max-width:600px)").matches;
-  const top = Math.max(mobile ? 170 : 190, Math.ceil(area.offsetTop + area.offsetHeight + 12));
+  const mobile = window.matchMedia("(max-width:600px), (max-height:500px)").matches;
+  const top = Math.max(mobile ? 120 : 190, Math.ceil(area.offsetTop + area.offsetHeight + (mobile ? 8 : 12)));
   lanes.style.top = top + "px";
   // 게임 화면이 창 높이를 꽉 채우도록, 아래 조작 영역을 뺀 남은 높이를 산성비 영역에 줍니다.
+  // 휴대폰 주소창이 나타나고 사라지는 높이까지 반영하도록 visualViewport를 우선 사용합니다.
   const foot = document.querySelector("#game .game-foot");
-  const room = window.innerHeight - (arena.getBoundingClientRect().top + window.scrollY) - (foot ? foot.offsetHeight : 90) - 34;
-  arena.style.height = Math.max(top + 250, mobile ? 340 : 420, Math.floor(room)) + "px";
+  const vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+  const room = vh - arena.getBoundingClientRect().top - (foot ? foot.offsetHeight : 90) - (mobile ? 18 : 34);
+  arena.style.height = Math.max(top + (mobile ? 190 : 250), mobile ? 300 : 420, Math.floor(room)) + "px";
 }
 window.addEventListener("resize", fitQuestionLayout);
+window.addEventListener("orientationchange", () => setTimeout(fitQuestionLayout, 250));
+if (window.visualViewport) window.visualViewport.addEventListener("resize", fitQuestionLayout);
+/* 휴대폰에서 화면 밖에 있는 요소를 부드럽게 보이게 합니다. */
+function revealOnMobile(el) {
+  if (!el || !window.matchMedia("(max-width:860px)").matches) return;
+  const r = el.getBoundingClientRect(), vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+  if (r.top >= 0 && r.bottom <= vh) return;
+  el.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
+}
 
 /* AI가 필요한 게임은 시작 전에 서버의 API 키 설정을 확인합니다. */
 async function ensureClaude() {
@@ -1766,7 +1943,8 @@ function renderTerritory() {
     const sel = st.selected === i, aiSel = st.aiPick === i;
     svg.append(svgEl("line", { x1, y1, x2, y2, stroke: e.owner >= 0 ? TERRITORY_COLORS[e.owner] : (aiSel ? "#e02424" : sel ? "#2a68bd" : "#e6d3ac"), "stroke-width": e.owner >= 0 ? Math.max(4, step * .08) : Math.max(2.5, step * .04), "stroke-linecap": "round" }));
     if (e.owner < 0 && myTurn) {
-      const hit = svgEl("line", { x1, y1, x2, y2, stroke: "transparent", "stroke-width": 22, "stroke-linecap": "round", tabindex: 0, role: "button", "aria-label": "선 선택" });
+      // 손가락으로도 고르기 쉽게 터치 영역을 칸 크기에 맞춰 넉넉히 (끝은 점에서 멈추도록 butt)
+      const hit = svgEl("line", { x1, y1, x2, y2, stroke: "transparent", "stroke-width": Math.max(26, step * .42), "stroke-linecap": "butt", tabindex: 0, role: "button", "aria-label": "선 선택" });
       hit.style.cursor = "pointer";
       hit.addEventListener("click", () => selectTerritory(i));
       svg.append(hit);
@@ -1799,6 +1977,7 @@ async function selectTerritory(i) {
   if (territoryState !== st || st.finished || st.currentPlayer !== 0) return;
   st.loadingQ = false; st.question = q; st.lastFeedback = "이 자료는 진짜일까요, 가짜일까요?";
   renderTerritory();
+  revealOnMobile(document.querySelector(".territory-question"));
 }
 function completeBoxes(player) {
   const st = territoryState, n = st.size; let gained = 0;
