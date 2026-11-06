@@ -4,6 +4,8 @@
 // 비밀 키워드는 서버에만 있고, 게임이 끝날 때만 브라우저로 보냅니다.
 const express = require('express');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 const { askJSON, isConfigured, config, ClaudeError } = require('./claude');
 
 const router = express.Router();
@@ -34,6 +36,36 @@ const KEYWORDS = [
 
 const norm = s => String(s || '').toLocaleLowerCase('ko-KR').replace(/[\s.,!?'"~·\-_()[\]]/g, '');
 const pattern = word => word.split('').map(ch => (ch === ' ' ? ' ' : '○')).join('');
+
+/* ---------- 출제 기록: 판이 바뀌거나 서버를 다시 켜도 같은 문제가 반복되지 않게 파일에 남겨 둡니다 ---------- */
+const HISTORY_FILE = path.join(__dirname, 'ai-history.json');
+const history = { facts: [], factTopics: [], words: [], wordTopics: [] };
+try { Object.assign(history, JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8'))); } catch { /* 처음 실행이면 기록이 없습니다 */ }
+for (const k of Object.keys(history)) if (!Array.isArray(history[k])) history[k] = [];
+let saveTimer = null;
+function saveHistory() {
+  if (saveTimer) return;
+  saveTimer = setTimeout(() => {
+    saveTimer = null;
+    fs.writeFile(HISTORY_FILE, JSON.stringify(history), err => { if (err) console.error('ai-history.json 저장 실패:', err.message); });
+  }, 500);
+}
+function remember(list, value, max) { list.push(value); while (list.length > max) list.shift(); saveHistory(); }
+
+function shuffled(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) { const j = crypto.randomInt(i + 1); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
+// 두 문장이 거의 같은 말인지 봅니다 (두 글자씩 끊어 겹치는 비율). 글자가 똑같지 않아도 뜻이 비슷하면 걸러집니다.
+function bigrams(s) { const t = norm(s), set = new Set(); for (let i = 0; i < t.length - 1; i++) set.add(t.slice(i, i + 2)); return set; }
+function similar(a, b) {
+  const A = bigrams(a), B = bigrams(b);
+  if (!A.size || !B.size) return false;
+  let both = 0; for (const g of A) if (B.has(g)) both++;
+  return (2 * both) / (A.size + B.size) >= 0.5;
+}
 
 /* ---------- 간단한 요청 제한 (API 키 비용 보호) ---------- */
 const hits = new Map();
@@ -127,56 +159,140 @@ router.post('/dots-turn', rateLimit, async (req, res) => {
 });
 
 /* ---------- 가짜 판별: Claude가 문제를 실시간으로 출제 ---------- */
-const FACT_TOPICS = ['과학 상식', '우리 몸과 건강', '지구와 우주', '환경과 날씨', '인터넷 정보 확인', 'AI가 만든 정보', '사진·영상 조작', '개인정보와 보안', '광고와 리뷰', '통계와 그래프 읽기', '역사·사회 상식', '동물과 식물'];
-router.post('/fact-questions', rateLimit, async (req, res) => {
-  const count = Math.min(10, Math.max(3, Number(req.body?.count) || 8));
-  const avoid = (Array.isArray(req.body?.avoid) ? req.body.avoid : []).slice(-40).map(t => String(t).slice(0, 120));
-  const topics = [...FACT_TOPICS].sort(() => Math.random() - .5).slice(0, 4);
-  try {
-    const out = await askJSON({
-      system: '너는 청소년 AI 리터러시 게임 "가짜 판별"의 문제 출제자야. 중학생이 상식과 생각으로 풀 수 있는 난이도의 한국어 문장을 만들어.\n' +
-        '- real: 널리 확인된 사실. fake: 틀린 사실, 잘못된 일반화("항상", "모든", "절대"), 흔한 속설, 출처 없는 과장 등.\n' +
-        '- real과 fake를 비슷한 개수로 섞고, 정답이 문장 모양만으로 티 나지 않게 해. fake 문장에 늘 "모든", "항상"만 쓰지 말고 다양하게.\n' +
-        '- 문장은 45자 이내 한 문장. 논란이 있거나 정답이 애매한 내용, 무섭거나 민감한 내용은 빼.\n' +
-        '- why는 왜 진짜/가짜인지 중학생 눈높이로 50자 이내 한 문장.',
-      messages: [{ role: 'user', content: `문장 ${count}개를 만들어 줘. 이번 분야: ${topics.join(', ')}.\n이미 나온 문장(겹치지 않게):\n${avoid.length ? avoid.map(t => '- ' + t).join('\n') : '(없음)'}` }],
-      schema: {
+// 분야만 알려 주면 AI가 가장 뻔한 사실만 계속 고르기 때문에, 문장마다 "분야 · 세부 주제"를 서버가 직접 정해서 줍니다.
+const FACT_TOPICS = {
+  '과학 상식': ['물의 성질', '빛과 색', '소리', '전기와 자석', '힘과 운동', '물질의 상태 변화', '열과 온도', '화학 반응'],
+  '우리 몸과 건강': ['수면과 휴식', '영양과 음식', '뼈와 근육', '눈과 귀', '면역과 백신', '운동', '치아와 위생', '뇌와 감각', '심장과 혈액'],
+  '지구와 우주': ['태양계 행성', '달', '별과 은하', '자전과 공전', '계절과 낮밤', '지진과 화산', '지구의 모양과 크기', '우주 탐사'],
+  '환경과 날씨': ['구름과 비', '바람과 태풍', '기후 변화', '재활용과 쓰레기', '대기 오염', '바다와 해류', '에너지 자원', '무지개와 번개'],
+  '인터넷 정보 확인': ['검색 결과 순위', 'SNS 공유와 소문', '출처와 작성 날짜', '댓글·조회수·좋아요', '영상 속 정보', '위키·백과사전', '낚시성 제목', '공식 계정 확인'],
+  'AI가 만든 정보': ['AI 환각(지어내기)', 'AI 학습 데이터', 'AI 번역', 'AI 추천', 'AI 이미지 생성', 'AI와 숙제', 'AI 글 탐지', 'AI의 한계'],
+  '사진·영상 조작': ['사진 보정', '딥페이크', '옛 사진 재사용', '잘라낸 장면과 맥락', '필터와 색', '합성 사진 단서', '영상 편집'],
+  '개인정보와 보안': ['비밀번호', '피싱 문자', '공용 와이파이', '위치 정보', '앱 권한', '2단계 인증', '사진 올리기 전 확인', '쿠키와 추적'],
+  '광고와 리뷰': ['후기 조작', '협찬 표시', '별점', '할인 문구', '인플루언서', '건강식품 광고', '비교 광고'],
+  '통계와 그래프 읽기': ['평균', '그래프 눈금', '표본 크기', '상관과 인과', '퍼센트', '설문 조사', '확률'],
+  '역사·사회 상식': ['삼국 시대', '조선 시대', '근현대사', '세계 지리', '문화유산', '경제 상식', '법과 규칙', '언어와 한글'],
+  '동물과 식물': ['곤충', '바닷속 생물', '새', '포유류', '식물의 광합성', '씨앗과 열매', '멸종 위기', '동물의 감각'],
+};
+function pickFactSlots(count) {
+  const all = [];
+  for (const [topic, subs] of Object.entries(FACT_TOPICS)) for (const sub of subs) all.push({ topic, sub });
+  const fresh = all.filter(s => !history.factTopics.includes(s.sub));
+  const pool = shuffled(fresh.length >= count * 2 ? fresh : all); // 최근에 쓴 세부 주제는 쉬게 합니다
+  const picked = [], perTopic = {};
+  for (const s of pool) {
+    if ((perTopic[s.topic] || 0) >= 2) continue; // 한 분야로 쏠리지 않게
+    picked.push(s); perTopic[s.topic] = (perTopic[s.topic] || 0) + 1;
+    if (picked.length >= count) break;
+  }
+  const answers = shuffled(picked.map((_, i) => (i % 2 ? 'real' : 'fake')));
+  return picked.map((s, i) => ({ ...s, answer: answers[i] }));
+}
+const FACT_SCHEMA = {
+  type: 'object',
+  properties: {
+    items: {
+      type: 'array',
+      items: {
         type: 'object',
-        properties: {
-          items: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: { text: { type: 'string' }, answer: { type: 'string', enum: ['real', 'fake'] }, why: { type: 'string' } },
-              required: ['text', 'answer', 'why'],
-              additionalProperties: false,
-            },
-          },
-        },
-        required: ['items'],
+        properties: { text: { type: 'string' }, answer: { type: 'string', enum: ['real', 'fake'] }, why: { type: 'string' } },
+        required: ['text', 'answer', 'why'],
         additionalProperties: false,
       },
-    });
-    const seen = new Set(avoid.map(norm));
-    const items = (out.items || [])
-      .map(it => ({ text: String(it.text || '').trim().slice(0, 120), answer: it.answer === 'real' ? 'real' : 'fake', why: String(it.why || '').trim().slice(0, 160) }))
-      .filter(it => it.text && it.why && !seen.has(norm(it.text)) && seen.add(norm(it.text)));
-    if (!items.length) return res.status(502).json({ message: 'Claude가 문제를 만들지 못했어요.' });
+    },
+  },
+  required: ['items'],
+  additionalProperties: false,
+};
+router.post('/fact-questions', rateLimit, async (req, res) => {
+  const count = Math.min(10, Math.max(3, Number(req.body?.count) || 8));
+  const fromClient = (Array.isArray(req.body?.avoid) ? req.body.avoid : []).slice(-40).map(t => String(t).slice(0, 120));
+  // 이번 판에서 나온 것 + 서버가 기억하는 지난 판들의 문장을 모두 피합니다.
+  const known = [...history.facts, ...fromClient];
+  const items = [];
+  try {
+    for (let attempt = 0; attempt < 2 && items.length < Math.ceil(count * 0.6); attempt++) {
+      const slots = pickFactSlots(count - items.length);
+      const shown = [...new Set([...history.facts.slice(-40), ...fromClient, ...items.map(i => i.text)])].slice(-60);
+      let out;
+      try {
+        out = await askJSON({
+          system: '너는 청소년 AI 리터러시 게임 "가짜 판별"의 문제 출제자야. 중학생이 상식과 생각으로 풀 수 있는 난이도의 한국어 문장을 만들어.\n' +
+            '- real: 널리 확인된 사실. fake: 틀린 사실, 잘못된 일반화("항상", "모든", "절대"), 흔한 속설, 출처 없는 과장 등.\n' +
+            '- 번호마다 지정된 "분야 · 세부 주제"와 정답(real/fake)에 맞춰 문장을 정확히 하나씩, 번호 순서대로 만들어. 세부 주제에서 벗어나지 마.\n' +
+            '- 세부 주제에서 제일 유명한 사실(예: "지구는 태양 주위를 돈다", "달은 스스로 빛을 낸다", "물은 100℃에 끓는다")은 이미 너무 많이 나왔으니 쓰지 말고, 중학생이 알 만한 다른 사실을 골라.\n' +
+            '- 정답이 문장 모양만으로 티 나지 않게 해. fake 문장에 늘 "모든", "항상", "절대"만 쓰지 말고 다양한 방식으로 틀리게 만들어.\n' +
+            '- 문장은 45자 이내 한 문장. 논란이 있거나 정답이 애매한 내용, 무섭거나 민감한 내용은 빼.\n' +
+            '- why는 왜 진짜/가짜인지 중학생 눈높이로 50자 이내 한 문장.',
+          messages: [{ role: 'user', content: `문장 ${slots.length}개를 만들어 줘.\n${slots.map((s, i) => `${i + 1}. ${s.topic} · ${s.sub} → 정답: ${s.answer}`).join('\n')}\n\n이미 나온 문장(같은 내용이나 비슷한 말도 쓰지 마):\n${shown.length ? shown.map(t => '- ' + t).join('\n') : '(없음)'}` }],
+          schema: FACT_SCHEMA,
+        });
+      } catch (e) {
+        if (items.length) break; // 이미 받은 문제가 있으면 그것만이라도 씁니다
+        throw e;
+      }
+      slots.forEach(s => remember(history.factTopics, s.sub, 40));
+      for (const it of out.items || []) {
+        const text = String(it.text || '').trim().slice(0, 120), why = String(it.why || '').trim().slice(0, 160);
+        if (!text || !why) continue;
+        if (known.some(k => similar(k, text)) || items.some(i => similar(i.text, text))) continue; // 비슷한 문장은 버립니다
+        items.push({ text, answer: it.answer === 'real' ? 'real' : 'fake', why });
+      }
+    }
+    if (!items.length) return res.status(502).json({ message: 'Claude가 새로운 문제를 만들지 못했어요.' });
+    items.forEach(i => remember(history.facts, i.text, 300));
     res.json({ items });
   } catch (e) { sendError(res, e); }
 });
 
 /* ---------- AI 윤리 스무고개 ---------- */
-// 최근에 나온 키워드는 다시 나오지 않게 기억해 둡니다.
-const recentWords = [];
-// 매번 다른 분야에서 출제하도록 무작위 분야를 지정합니다.
-const KW_THEMES = [
-  '개인정보·사생활 보호', '가짜 정보·딥페이크', '저작권·창작과 출처', 'AI 기술과 서비스(챗봇, 추천, 번역, 이미지 생성 등)',
-  '온라인 예절·사이버 폭력', '보안·해킹·사기', 'AI의 공정성·차별', '학습과 숙제에서 AI 쓰기',
-  'AI와 일상생활(자율주행, 스마트폰, 스피커, 로봇 등)', '데이터와 알고리즘', '디지털 습관·중독·건강', 'AI와 직업·미래 사회',
-];
+// 최근에 나온 키워드는 다시 나오지 않게 기억해 둡니다. (파일에도 저장되어 서버를 다시 켜도 남아요)
+const recentWords = history.words;
+const WORD_MEMORY = 80;
+function rememberWord(word) { remember(recentWords, word, WORD_MEMORY); }
+const isRecentWord = word => recentWords.some(w => norm(w) === norm(word));
+// 매번 다른 분야·세부 주제에서 출제하도록 서버가 직접 정해서 줍니다.
+const KW_THEMES = {
+  '개인정보·사생활 보호': ['비밀번호와 계정', '위치 정보', '사진·SNS 공개', '앱 권한', '이름·연락처 같은 신상'],
+  '가짜 정보·딥페이크': ['가짜 뉴스', '합성 사진·영상', '목소리 합성', '소문과 루머', '낚시성 제목'],
+  '저작권·창작과 출처': ['글·그림 베끼기', '음악·영상 불법 공유', '출처 밝히기', 'AI가 만든 그림의 주인', '남의 사진 가져다 쓰기'],
+  'AI 기술과 서비스': ['챗봇', '추천 영상·추천 알고리즘', '번역·음성 인식', '이미지 생성', '검색과 요약'],
+  '온라인 예절·사이버 폭력': ['악플', '단톡방 괴롭힘', '놀림과 조롱', '욕설과 비방', '신상 공개'],
+  '보안·해킹·사기': ['피싱·스미싱', '해킹', '악성코드와 바이러스', '중고 거래 사기', '공용 와이파이'],
+  'AI의 공정성·차별': ['편향', '차별', '불공정한 판단', '치우친 학습 데이터', '외모·성별 고정관념'],
+  '학습과 숙제에서 AI 쓰기': ['표절', '숙제 대신 시키기', 'AI 답 확인하기', '도움받은 사실 밝히기', '스스로 생각하기'],
+  'AI와 일상생활': ['자율주행', '스마트 스피커', '로봇 청소기', '얼굴 잠금', '배달·돌봄 로봇'],
+  '데이터와 알고리즘': ['알고리즘 추천', '데이터 수집', '빅데이터', '학습 데이터', '데이터 라벨링'],
+  '디지털 습관·중독·건강': ['스마트폰 중독', '게임 과몰입', '수면 방해', '눈·목 건강', '디지털 디톡스'],
+  'AI와 직업·미래 사회': ['일자리 변화', '로봇 의사', 'AI 기자·작가', '사람만 할 수 있는 일', 'AI 규칙과 법'],
+};
+function pickKeywordTopic() {
+  const all = [];
+  for (const [theme, subs] of Object.entries(KW_THEMES)) for (const sub of subs) all.push({ theme, sub });
+  const fresh = all.filter(t => !history.wordTopics.includes(t.sub));
+  const pool = fresh.length ? fresh : all;
+  const t = pool[crypto.randomInt(pool.length)];
+  remember(history.wordTopics, t.sub, 40);
+  return t;
+}
+// AI 출제가 안 될 때 쓰는 준비된 키워드 (최근에 나온 것은 피합니다)
+function pickFallbackKeyword() {
+  const fresh = KEYWORDS.filter(k => !isRecentWord(k.word));
+  const pool = fresh.length ? fresh : KEYWORDS;
+  return pool[crypto.randomInt(pool.length)];
+}
 async function generateKeyword() {
-  const theme = KW_THEMES[crypto.randomInt(KW_THEMES.length)];
+  let lastDup = '';
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const kw = await generateKeywordOnce(lastDup);
+    if (!kw) continue;
+    if (isRecentWord(kw.word)) { lastDup = kw.word; continue; } // 최근에 나온 낱말이면 다시 뽑습니다
+    return kw;
+  }
+  throw new ClaudeError('새로운 키워드를 만들지 못했어요.', { status: 502, retryable: true });
+}
+async function generateKeywordOnce(justDuplicated) {
+  const { theme, sub } = pickKeywordTopic();
   const out = await askJSON({
     system: '너는 중학생을 위한 "AI 윤리 스무고개"의 출제자야. 쉽게 맞힐 수 있는 비밀 키워드 하나를 골라.\n' +
       '- 난이도는 쉽게: 중학교 1학년이 듣자마자 뜻을 아는, 일상에서 자주 쓰는 낱말이어야 해. (좋은 예: 개인정보, 가짜 뉴스, 딥페이크, 저작권, 비밀번호, 챗봇, 악플, 표절, 출처, 해킹)\n' +
@@ -185,7 +301,7 @@ async function generateKeyword() {
       '- aliases: 정답으로 인정할 다른 표현·띄어쓰기를 바꾼 형태·영어 표기·비슷한 말 3~6개. 넉넉하게 넣어.\n' +
       '- field: 플레이어에게 보여 줄 친절하고 구체적인 힌트(15자 이내, 예: "인터넷 글과 관련", "사진·영상과 관련"). 키워드 자체나 그 일부는 쓰지 마.\n' +
       '- desc: 게임이 끝나고 보여 줄 설명. 뜻과 왜 윤리적으로 중요한지 중학생 눈높이로 두 문장(90자 이내).',
-    messages: [{ role: 'user', content: `이번 판의 분야: ${theme}\n자주 나오는 뻔한 낱말(개인정보, 딥페이크, 가짜 뉴스 등)만 반복하지 말고 이 분야에서 다양하게 골라.\n최근에 나온 키워드(이번엔 반드시 다른 것으로): ${recentWords.join(', ') || '(없음)'}` }],
+    messages: [{ role: 'user', content: `이번 판의 분야: ${theme}\n이번 판의 세부 주제: ${sub} (이 주제와 바로 이어지는 낱말을 골라)\n개인정보, 딥페이크, 가짜 뉴스처럼 너무 뻔한 낱말은 피하고, 세부 주제에 어울리는 다른 낱말을 골라.\n최근에 나온 키워드(이번엔 반드시 다른 것으로): ${recentWords.slice(-50).join(', ') || '(없음)'}${justDuplicated ? `\n방금 "${justDuplicated}"를 골랐는데 최근에 나온 낱말이야. 다른 낱말로 골라.` : ''}` }],
     schema: {
       type: 'object',
       properties: { word: { type: 'string' }, aliases: { type: 'array', items: { type: 'string' } }, field: { type: 'string' }, desc: { type: 'string' } },
@@ -194,7 +310,7 @@ async function generateKeyword() {
     },
   });
   const word = String(out.word || '').trim();
-  if (!/^[가-힣A-Za-z0-9 ]{2,12}$/.test(word)) throw new ClaudeError('키워드 형식이 올바르지 않습니다.', { status: 502, retryable: true });
+  if (!/^[가-힣A-Za-z0-9 ]{2,12}$/.test(word)) return null; // 형식이 이상하면 다시 뽑습니다
   return {
     word,
     aliases: (out.aliases || []).map(a => String(a).trim()).filter(Boolean).slice(0, 6),
@@ -293,11 +409,9 @@ router.post('/twenty/start', rateLimit, async (req, res) => {
   catch (e) {
     if (e instanceof ClaudeError && ['no_key', 'bad_key'].includes(e.code)) return sendError(res, e);
     console.error('키워드 생성 실패, 준비된 목록 사용:', e.message);
-    const fresh = KEYWORDS.filter(k => !recentWords.includes(k.word));
-    const pool = fresh.length ? fresh : KEYWORDS;
-    kw = pool[crypto.randomInt(pool.length)]; generated = false;
+    kw = pickFallbackKeyword(); generated = false;
   }
-  recentWords.push(kw.word); if (recentWords.length > 30) recentWords.shift();
+  rememberWord(kw.word);
   const s = {
     id: crypto.randomUUID(), mode, kw, generated,
     log: [], turnsLeft: { ...TURNS[mode] }, next: 'me', finished: false, winner: null, busy: false, createdAt: Date.now(),
@@ -358,5 +472,5 @@ router.post('/twenty/giveup', (req, res) => {
 });
 
 // 온라인 1대1 스무고개가 같은 Claude 출제·진행·판정을 쓰도록 내보냅니다.
-router.twenty = { isConfigured, KEYWORDS, generateKeyword, hostAnswer, judgeGuess, pattern, recentWords };
+router.twenty = { isConfigured, KEYWORDS, generateKeyword, pickFallbackKeyword, rememberWord, hostAnswer, judgeGuess, pattern, recentWords };
 module.exports = router;
