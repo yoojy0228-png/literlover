@@ -283,9 +283,25 @@ async function generateKeyword() {
     const kw = await generateKeywordOnce(lastDup);
     if (!kw) continue;
     if (isRecentWord(kw.word)) { lastDup = kw.word; continue; } // 최근에 나온 낱말이면 다시 뽑습니다
+    if (!(await isAiEthicsWord(kw))) { lastDup = kw.word; console.warn('AI 윤리와 무관해서 버린 키워드:', kw.word); continue; } // 한 번 더 검수
     return kw;
   }
   throw new ClaudeError('새로운 키워드를 만들지 못했어요.', { status: 502, retryable: true });
+}
+// 고른 낱말이 정말 "AI 윤리"에 속하는지 따로 한 번 더 검수합니다. 애매하거나 검수에 실패하면 버립니다.
+const ETHICS_BLOCK = /^(와이파이|해킹|악플|바이러스|악성코드|비밀번호|컴퓨터|스마트폰|인터넷|게임|유튜브|카메라|로봇)$/;
+async function isAiEthicsWord(kw) {
+  if (ETHICS_BLOCK.test(kw.word.replace(/\s/g, ''))) return false;
+  try {
+    const out = await askJSON({
+      system: '너는 "AI 윤리" 주제 검수관이야. 주어진 낱말이 인공지능(AI)의 윤리·책임·공정성·개인정보·저작권·가짜 정보(딥페이크, 환각)·투명성·AI 사용 태도와 직접 관련된 개념인지 엄격하게 판정해.\n' +
+        '- AI와 직접 이어지지 않는 일반 인터넷·보안·예절·기기 낱말(예: 와이파이, 해킹, 악플, 비밀번호, 게임)은 false.\n' +
+        '- AI 윤리 수업에서 바로 다루는 개념이면 true. 조금이라도 애매하면 false.',
+      messages: [{ role: 'user', content: `낱말: ${kw.word}\n설명: ${kw.desc}` }],
+      schema: { type: 'object', properties: { aiEthics: { type: 'boolean' } }, required: ['aiEthics'], additionalProperties: false },
+    });
+    return out.aiEthics === true;
+  } catch { return false; }
 }
 async function generateKeywordOnce(justDuplicated) {
   const { theme, sub } = pickKeywordTopic();
