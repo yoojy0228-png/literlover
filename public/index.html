@@ -2344,7 +2344,11 @@ $("twentyHome").addEventListener("click", () => { tw.gen++; hideGenerating(true)
 
   function getOnlinePool(topic) {
     if (topic === "가짜 판별") {
-      return shuffle(TERRITORY_FACTS.map(f => ({ q: f.text, a: ["진짜", "가짜"], c: f.answer === "real" ? 0 : 1, e: f.why })));
+      // 지난 판에서 본 문제는 뒤로 미룹니다. 안 본 문제가 거의 없으면 기록을 비우고 다시 시작해요.
+      const all = TERRITORY_FACTS.map(f => ({ q: f.text, a: ["진짜", "가짜"], c: f.answer === "real" ? 0 : 1, e: f.why }));
+      let seen = new Set(bankSeen()), fresh = all.filter(x => !seen.has(x.q));
+      if (fresh.length < 12) { bankSeenSave([]); fresh = all; }
+      return shuffle(fresh);
     }
     return shuffle((BANK[topic] || BANK["문해력"]).slice());
   }
@@ -2419,6 +2423,7 @@ $("twentyHome").addEventListener("click", () => { tw.gen++; hideGenerating(true)
     pendingDotLine=best;dotsQuestionActive=true;drawOnlineDots(dotsState,true);
     if(!onlinePool.length||onlineIndex>=onlinePool.length){onlinePool=getOnlinePool("가짜 판별");onlineIndex=0;}
     const q=onlinePool[onlineIndex++],order=Math.random()<.5?[0,1]:[1,0],opts=order.map(i=>q.a[i]),correct=order.indexOf(q.c);
+    bankSeenSave([...bankSeen(),q.q]); // 본 문제 기억 (다음 판에서도 겹치지 않게)
     $o("onlineQuizArea").hidden=false;$o("onlineDotsArea").hidden=false;$o("onlineQuestion").textContent=q.q;
     const box=$o("onlineOptions");box.replaceChildren();opts.forEach((opt,i)=>{const b=document.createElement("button");b.className="online-option";b.textContent=(i===0?"1. ":"2. ")+opt;b.onclick=()=>{if(!dotsQuestionActive)return;dotsQuestionActive=false;Array.from(box.children).forEach(x=>x.disabled=true);$o("onlineExplain").textContent=q.e||"";if(i===correct){$o("onlinePlayStatus").textContent="정답! 선을 연결합니다.";sock.emit("dots:line",{line:pendingDotLine});}else{$o("onlinePlayStatus").textContent="오답! 선은 연결되지 않았어. 다시 선을 골라 문제를 풀어 봐.";$o("onlineDotsStatus").textContent="오답! 내 차례가 유지됩니다. 다른 선을 선택하세요.";}pendingDotLine=null;if(dotsState)drawOnlineDots(dotsState,true);};box.append(b);});
     $o("onlineExplain").textContent="";$o("onlineNext").hidden=true;$o("onlinePlayStatus").textContent="선을 연결하려면 자료를 읽고 정답을 선택하세요! (다른 선을 누르면 선을 바꿀 수 있어요)";
