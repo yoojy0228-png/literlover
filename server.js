@@ -80,7 +80,9 @@ function recordOnlineResult(r, scores, mode){
   r.players.forEach((p,i)=>{const u=db.users[p.userKey];if(!u)return;const outcome=winners.length>1?'draw':(winners[0]===i?'win':'loss');addRecord(u,{mode,modeLabel:mode==='dots'?'온라인 도트 앤 박스':mode==='twenty'?'온라인 스무고개':'온라인 퀴즈',topic:r.topic||'가짜 판별',score:scores[i],opponent:r.players[1-i]?.name||'',result:outcome,resultLabel:outcome==='win'?'승리':outcome==='loss'?'패배':'무승부'});});
 }
 function code(){ let s=''; do { s=String(Math.floor(100000+Math.random()*900000)); } while(rooms.has(s)); return s; }
-function publicRoom(r){ return {code:r.code, players:r.players.map(p=>({name:p.name, score:p.score})), started:r.started, topic:r.topic, mode:r.mode}; }
+function publicRoom(r){ return {code:r.code, players:r.players.map(p=>({id:p.id, name:p.name, score:p.score})), started:r.started, topic:r.topic, mode:r.mode}; }
+// 점수는 이름이 아니라 소켓 ID로 구분한다. (이름이 같거나 입력창 이름과 다르면 "나"와 "상대"가 뒤바뀌기 때문)
+function emitScores(r){ io.to(r.code).emit('game:scores', r.players.map(p=>({id:p.id, name:p.name, score:p.score}))); }
 function newDots(){return {size:4, lines:{}, boxes:Array.from({length:4},()=>Array(4).fill(-1)), turn:0, scores:[0,0], finished:false};}
 function dotsFor(r, playerId){const you=r.players.findIndex(p=>p.id===playerId);return {...r.dots,you};}
 function emitDots(r){r.players.forEach(p=>io.to(p.id).emit(r.dots.finished?'dots:ended':'dots:state',dotsFor(r,p.id)));}
@@ -95,7 +97,7 @@ function emitTwenty(r){r.players.forEach(p=>io.to(p.id).emit('twenty:state',twen
 function finishTwenty(r, winner){
   const t=r.twenty; t.finished=true; t.winner=winner; if(winner>=0)r.players[winner].score++;
   recordOnlineResult(r,r.players.map((_,i)=>i===winner?1:0),'twenty');
-  io.to(r.code).emit('game:scores',r.players.map(p=>({name:p.name,score:p.score})));
+  emitScores(r);
 }
 // 새 판 시작: Claude가 키워드를 고른다. 실패하면 준비된 키워드를 쓴다.
 async function startTwentyRound(r, t){
@@ -123,12 +125,12 @@ io.on('connection', socket => {
     if(r.started&&!(r.mode==='dots'&&r.dots&&r.dots.finished)&&!(r.mode==='twenty'&&r.twenty&&r.twenty.finished))return; // 도트 앤 박스·스무고개는 끝난 뒤 한 판 더 가능
     if(r.mode==='twenty'&&!AIG.isConfigured()){socket.emit('room:error','온라인 스무고개는 Claude 진행자가 필요해요. 서버의 .env에 ANTHROPIC_API_KEY를 넣어 주세요.');return;}
     const rematch=r.mode==='twenty'&&r.started; // 스무고개 재대결은 승수를 유지하고 먼저 묻는 사람만 바꾼다
-    r.started=true; r.recorded=false; if(!rematch)r.players.forEach(p=>p.score=0); r.question=null; r.answered={};
+    r.started=true; r.recorded=false; r.over=false; if(!rematch)r.players.forEach(p=>p.score=0); r.question=null; r.answered={};
     if(r.mode==='dots')r.dots=newDots();
     if(r.mode==='twenty'){r.round=rematch?(r.round||0)+1:0;r.twenty=newTwenty(r.round%2);startTwentyRound(r,r.twenty);}
     io.to(r.code).emit('game:started',publicRoom(r));
     if(r.mode==='dots')emitDots(r);
-    if(r.mode==='twenty'){io.to(r.code).emit('game:scores',r.players.map(p=>({name:p.name,score:p.score})));emitTwenty(r);}
+    if(r.mode==='twenty'){emitScores(r);emitTwenty(r);}
   });
   // 스무고개: 현재 차례인 플레이어가 질문 또는 정답 도전을 하면 Claude 진행자가 답한다.
   socket.on('twenty:turn', async ({kind,text}={}) => {
@@ -169,7 +171,7 @@ io.on('connection', socket => {
     r.dots.finished=false;
     r.players.forEach((p,i)=>p.score=r.dots.scores[i]);
     emitDots(r);
-    io.to(r.code).emit('game:scores',r.players.map(p=>({name:p.name,score:p.score})));
+    emitScores(r);
   });
   socket.on('dots:line', ({line}={}) => {
     const r=rooms.get(socket.data.room); if(!r||!r.started||r.mode!=='dots'||!r.dots||r.dots.finished)return;
@@ -185,7 +187,7 @@ io.on('connection', socket => {
     if(!got)r.dots.turn=1-playerIndex;
     r.dots.finished=r.dots.boxes.every(row=>row.every(x=>x!==-1));
     if(r.dots.finished)recordOnlineResult(r,r.dots.scores,'dots');
-    emitDots(r);io.to(r.code).emit('game:scores',r.players.map(p=>({name:p.name,score:p.score})));
+    emitDots(r);emitScores(r);
   });
   socket.on('game:question', data => {
     const r=rooms.get(socket.data.room); if(!r||r.mode!=='quiz'||r.host!==socket.id||!r.started)return;
@@ -194,20 +196,26 @@ io.on('connection', socket => {
     io.to(r.code).emit('game:question',{id:r.question.id,text:r.question.text,options:r.question.options});
   });
   socket.on('game:answer', ({id,index}={}) => {
-    const r=rooms.get(socket.data.room); if(!r||r.mode!=='quiz'||!r.started||!r.question||r.question.id!==String(id)||r.answered[socket.id]!==undefined)return;
+    const r=rooms.get(socket.data.room); if(!r||r.mode!=='quiz'||!r.started||!r.question||r.question.done||r.question.id!==String(id)||r.answered[socket.id]!==undefined)return;
     if(!r.players.some(p=>p.id===socket.id))return;
-    const choice=Number(index); if(choice!==0&&choice!==1)return;
-    r.answered[socket.id]={choice,correct:choice===r.question.correct};
-    const p=r.players.find(p=>p.id===socket.id); p.score += choice===r.question.correct?10:-10;
-    socket.emit('game:answer-result',{correct:choice===r.question.correct,correctIndex:r.question.correct,explain:r.question.explain,score:p.score});
-    io.to(r.code).emit('game:scores',r.players.map(p=>({name:p.name,score:p.score})));
-    if(r.players.every(p=>r.answered[p.id]!==undefined)){
-      const winner=r.players.find(p=>p.score>=100);
+    const choice=Number(index); if(choice!==0&&choice!==1&&choice!==-1)return; // -1: 보기가 바닥에 닿아 시간 초과(오답)
+    const correct=choice===r.question.correct;
+    r.answered[socket.id]={choice,correct};
+    // 먼저 정답을 맞힌 사람만 +10점을 얻고 그 문제는 바로 끝난다. 오답·시간 초과는 -10점.
+    const p=r.players.find(p=>p.id===socket.id); p.score += correct?10:-10;
+    socket.emit('game:answer-result',{correct,score:p.score});
+    emitScores(r);
+    if(correct||r.players.every(p=>r.answered[p.id]!==undefined)){
+      r.question.done=true;
+      // 100점 이상인 사람 중 점수가 가장 높은 한 명이 승자. 동점이면 승부가 날 때까지 계속한다.
+      const top=Math.max(...r.players.map(p=>p.score)), leaders=r.players.filter(p=>p.score===top);
+      const winner=top>=100&&leaders.length===1?leaders[0]:null;
+      r.over=!!winner;
       if(winner)recordOnlineResult(r,r.players.map(p=>p.score),'quiz');
-      io.to(r.code).emit('game:round-complete',{answers:r.players.map(p=>({name:p.name,choice:r.answered[p.id].choice,correct:r.answered[p.id].correct})),correctIndex:r.question.correct,explain:r.question.explain,winner:winner?winner.name:null});
+      io.to(r.code).emit('game:round-complete',{firstId:correct?socket.id:null,answers:r.players.map(p=>({id:p.id,name:p.name,choice:r.answered[p.id]?r.answered[p.id].choice:null,correct:!!(r.answered[p.id]&&r.answered[p.id].correct)})),correctIndex:r.question.correct,explain:r.question.explain,winner:winner?winner.name:null,winnerId:winner?winner.id:null});
     }
   });
-  socket.on('game:next',()=>{const r=rooms.get(socket.data.room);if(r&&r.mode==='quiz'&&r.host===socket.id&&r.started){if(r.players.some(p=>p.score>=100)){r.players.forEach(p=>p.score=0);r.recorded=false;io.to(r.code).emit('game:scores',r.players.map(p=>({name:p.name,score:p.score})));}io.to(r.code).emit('game:next-request');}});
+  socket.on('game:next',()=>{const r=rooms.get(socket.data.room);if(r&&r.mode==='quiz'&&r.host===socket.id&&r.started){if(r.over){r.over=false;r.players.forEach(p=>p.score=0);r.recorded=false;emitScores(r);}io.to(r.code).emit('game:next-request');}});
   socket.on('room:leave',()=>leave(socket));
   socket.on('disconnect',()=>leave(socket));
   function leave(s){const c=s.data.room;if(!c)return;const r=rooms.get(c);s.data.room=null;if(!r)return;rooms.delete(c);io.to(c).emit('room:closed','상대방 연결이 종료되어 방이 닫혔습니다.');}
