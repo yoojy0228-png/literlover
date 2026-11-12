@@ -1663,7 +1663,7 @@ async function launchGame() {
   pool = shuffle(BANK[settings.topic]);
   if (settings.topic === "문해력") {
     litSeen = []; litBackup = [];
-    const fresh = await fetchLiteracy(3500); // 느리거나 AI가 안 되면 준비된 문제만으로 바로 시작합니다
+    const fresh = await fetchLiteracy(9000); // 느리거나 AI가 안 되면 준비된 문제만으로 바로 시작합니다
     // AI 문제는 난이도에 맞춰 만든 것이라, 난이도 구분이 없는 준비된 문제는 AI 문제가 모자랄 때만 뒤에 씁니다.
     if (fresh.length) { litBackup = pool; pool = shuffle(fresh); }
   }
