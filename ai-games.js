@@ -29,10 +29,26 @@ const KEYWORDS = [
   { word: '연합 학습', aliases: ['연합학습', 'federatedlearning', '페더레이티드 러닝'], field: '개인정보 보호 기술', desc: '데이터를 한곳에 모으지 않고 각자의 기기에서 배운 결과만 합치는 방식. 개인정보를 지키는 데 도움이 돼요.' },
   { word: '적대적 공격', aliases: ['적대적공격', '적대적 예제', '적대적 사례', 'adversarial attack'], field: 'AI 보안', desc: 'AI가 잘못 판단하도록 입력을 살짝 바꿔 속이는 공격. AI를 믿고 쓸 때 안전 대책이 필요한 이유예요.' },
   { word: '블랙박스 AI', aliases: ['블랙박스', '블랙박스ai', 'blackbox', '블랙박스 모델'], field: 'AI 투명성', desc: '왜 그런 결과를 냈는지 사람이 속을 알 수 없는 AI. 중요한 결정에 쓰이면 책임과 설명이 문제가 돼요.' },
+  // 쉬움
+  { word: '챗봇', aliases: ['chatbot', '대화형 ai', '채팅봇', '대화 ai'], field: '대화하는 AI', desc: '사람과 글로 대화하는 AI 프로그램. 그럴듯해도 틀린 말을 할 수 있어서 꼭 확인해야 해요.' },
+  { word: '가짜 영상', aliases: ['가짜영상', '합성 영상', 'ai 영상', '조작 영상'], field: '영상과 관련', desc: 'AI로 만들거나 바꿔서 진짜처럼 보이게 한 영상. 퍼뜨리기 전에 진짜인지 꼭 확인해야 해요.' },
+  { word: '스마트 스피커', aliases: ['스마트스피커', 'ai 스피커', 'ai스피커', '인공지능 스피커'], field: '말로 시키는 기기', desc: '말로 시키면 대답하고 일을 해 주는 AI 기기. 내 말을 계속 듣고 저장할 수 있어서 조심해야 해요.' },
+  { word: 'AI 그림', aliases: ['ai그림', '인공지능 그림', 'ai 이미지', '생성 그림'], field: '그림과 관련', desc: 'AI가 글을 보고 만들어 낸 그림. 다른 사람의 작품을 배워서 만들었다면 저작권 문제가 생길 수 있어요.' },
+  { word: '음성 비서', aliases: ['음성비서', 'ai 비서', 'ai비서', '시리', '빅스비'], field: '목소리로 쓰는 AI', desc: '목소리로 물으면 답해 주는 AI 도우미. 내 목소리와 질문이 저장될 수 있다는 점이 문제예요.' },
+  { word: '추천 영상', aliases: ['추천영상', '영상 추천', '알고리즘 영상'], field: '영상·SNS와 관련', desc: 'AI가 내 취향을 보고 골라 주는 영상. 비슷한 영상만 계속 보게 될 수 있어요.' },
+  // 보통
+  { word: 'AI 탐지기', aliases: ['ai탐지기', 'ai 글 탐지', '생성물 탐지기', 'ai 판별기'], field: 'AI가 쓴 글 찾기', desc: '글이나 그림을 AI가 만들었는지 알아내는 도구. 틀릴 때도 있어서 억울한 사람이 생길 수 있어요.' },
+  { word: '맞춤 광고', aliases: ['맞춤광고', '개인 맞춤 광고', '타깃 광고', '타겟 광고'], field: '광고·SNS와 관련', desc: 'AI가 내 관심사를 분석해 보여 주는 광고. 내 정보를 많이 모으게 되는 점이 문제예요.' },
+  { word: '데이터 수집', aliases: ['데이터수집', '정보 수집', '데이터 모으기'], field: 'AI가 모으는 자료', desc: 'AI를 만들려고 사람들의 정보를 모으는 일. 허락 없이 모으면 개인정보 침해가 될 수 있어요.' },
+  // 어려움
+  { word: '모델 붕괴', aliases: ['모델붕괴', 'model collapse', '모델 퇴화'], field: 'AI 학습의 문제', desc: 'AI가 만든 글을 다시 AI가 배우다 점점 품질이 나빠지는 현상. 사람이 만든 데이터가 중요한 이유예요.' },
+  { word: '레드팀', aliases: ['레드팀 테스트', '레드티밍', 'red team', '레드 팀'], field: 'AI 안전 점검', desc: 'AI의 위험한 점을 일부러 공격해 찾아내는 점검 방법. 사고가 나기 전에 문제를 막는 데 도움이 돼요.' },
+  { word: '알고리즘 감사', aliases: ['알고리즘감사', 'ai 감사', '알고리즘 검증', '알고리즘 audit'], field: 'AI 책임과 점검', desc: '알고리즘이 공정하고 안전한지 외부에서 조사하는 일. 숨은 편향을 찾는 데 쓰여요.' },
+  { word: '프라이버시 보호 기술', aliases: ['프라이버시 강화 기술', '차분 프라이버시', '개인정보 보호 기술', 'pet'], field: '개인정보 보호 기술', desc: '데이터를 쓰면서도 개인을 알아볼 수 없게 지키는 기술. AI 학습과 개인정보를 함께 지키는 방법이에요.' },
 ];
 // 난이도(쉬움·보통·어려움). 준비된 키워드는 아래 목록에 없으면 "보통"으로 칩니다.
-const EASY_WORDS = new Set(['딥페이크', '안면 인식', '자율주행차', '음성 합성', '프롬프트', '생성형 AI']);
-const HARD_WORDS = new Set(['설명 가능성', '데이터 라벨링', '연합 학습', '적대적 공격', '블랙박스 AI']);
+const EASY_WORDS = new Set(['딥페이크', '안면 인식', '자율주행차', '음성 합성', '프롬프트', '생성형 AI', '챗봇', '가짜 영상', '스마트 스피커', 'AI 그림', '음성 비서', '추천 영상']);
+const HARD_WORDS = new Set(['설명 가능성', '데이터 라벨링', '연합 학습', '적대적 공격', '블랙박스 AI', '모델 붕괴', '레드팀', '알고리즘 감사', '프라이버시 보호 기술']);
 const levelOfWord = k => (EASY_WORDS.has(k.word) ? 'easy' : HARD_WORDS.has(k.word) ? 'hard' : 'medium');
 const LEVELS = ['easy', 'medium', 'hard'];
 const cleanLevel = v => (LEVELS.includes(v) ? v : 'medium');
@@ -42,7 +58,7 @@ const pattern = word => word.split('').map(ch => (ch === ' ' ? ' ' : '○')).joi
 
 /* ---------- 출제 기록: 판이 바뀌거나 서버를 다시 켜도 같은 문제가 반복되지 않게 파일에 남겨 둡니다 ---------- */
 const HISTORY_FILE = path.join(__dirname, 'ai-history.json');
-const history = { facts: [], factTopics: [], words: [], wordTopics: [], lit: [], litTopics: [], litPairs: [] };
+const history = { facts: [], factTopics: [], words: [], wordAliases: [], wordTopics: [], lit: [], litTopics: [], litPairs: [] };
 const pairKey = (a, b) => [norm(a), norm(b)].sort().join('|');
 try { Object.assign(history, JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8'))); } catch { /* 처음 실행이면 기록이 없습니다 */ }
 for (const k of Object.keys(history)) if (!Array.isArray(history[k])) history[k] = [];
@@ -424,9 +440,23 @@ router.post('/literacy-questions', rateLimit, async (req, res) => {
 /* ---------- AI 윤리 스무고개 ---------- */
 // 최근에 나온 키워드는 다시 나오지 않게 기억해 둡니다. (파일에도 저장되어 서버를 다시 켜도 남아요)
 const recentWords = history.words;
-const WORD_MEMORY = 80;
-function rememberWord(word) { remember(recentWords, word, WORD_MEMORY); }
-const isRecentWord = word => recentWords.some(w => norm(w) === norm(word));
+const WORD_MEMORY = 300;
+function rememberWord(word, aliases = []) {
+  remember(recentWords, word, WORD_MEMORY);
+  for (const a of aliases) remember(history.wordAliases, a, WORD_MEMORY * 4);
+}
+// 낱말과 별칭(띄어쓰기·표기만 다른 말 포함)을 비교용 키로 바꿉니다.
+const wordKeys = kw => [kw.word, ...(kw.aliases || [])].map(norm).filter(w => w.length >= 2);
+// 두 낱말 묶음이 같은 개념인지: 키가 같거나, 3글자 이상끼리 한쪽이 다른 쪽을 포함하면 같은 것으로 봅니다.
+function sameWord(aKeys, bKeys) {
+  return aKeys.some(a => bKeys.some(b => a === b || (Math.min(a.length, b.length) >= 3 && (a.includes(b) || b.includes(a)))));
+}
+const isRecentKw = kw => {
+  const keys = wordKeys(kw);
+  const known = [...recentWords, ...history.wordAliases].map(norm).filter(w => w.length >= 2);
+  return sameWord(keys, known);
+};
+const isRecentWord = word => isRecentKw({ word });
 // 매번 다른 분야·세부 주제에서 출제하도록 서버가 직접 정해서 줍니다.
 const KW_THEMES = {
   'AI와 개인정보': ['AI에 입력하는 말(프롬프트)', '얼굴·목소리 데이터 수집', '학습 데이터에 쓰이는 내 정보', 'AI 앱 권한'],
@@ -451,9 +481,12 @@ function pickKeywordTopic() {
 // AI 출제가 안 될 때 쓰는 준비된 키워드 (최근에 나온 것은 피합니다)
 function pickFallbackKeyword(level = 'medium') {
   const lv = KEYWORDS.filter(k => levelOfWord(k) === cleanLevel(level));
-  const fresh = lv.filter(k => !isRecentWord(k.word));
-  const pool = fresh.length ? fresh : lv.length ? lv : KEYWORDS;
-  return pool[crypto.randomInt(pool.length)];
+  const fresh = lv.filter(k => !isRecentKw(k));
+  if (fresh.length) return fresh[crypto.randomInt(fresh.length)];
+  // 다 나왔으면 가장 오래전에 나온 것부터 다시 씁니다.
+  const age = k => { const i = recentWords.findIndex(w => norm(w) === norm(k.word)); return i < 0 ? -1 : i; };
+  const pool = (lv.length ? lv : KEYWORDS).slice().sort((a, b) => age(a) - age(b));
+  return pool[0];
 }
 // 미리 만들어 둔 키워드 창고: 게임을 시작할 때 Claude를 기다리지 않고 바로 꺼내 쓰고, 부족해지면 뒤에서 다시 채웁니다.
 // 난이도마다 창고가 따로 있고, 난이도와 상관없이 모두 3개씩 쌓아 둡니다.
@@ -467,7 +500,7 @@ async function refillKeywordPool(level) {
   try {
     while (pool.length < KW_POOL_SIZE[level]) {
       let kw;
-      try { kw = await generateKeywordSlow(level, LEVELS.flatMap(l => kwPools[l]).map(k => k.word)); }
+      try { kw = await generateKeywordSlow(level, LEVELS.flatMap(l => kwPools[l])); }
       catch (e) { st.failUntil = Date.now() + 30000; console.warn(`키워드(${level}) 미리 만들기 실패:`, e.message); break; }
       pool.push(kw);
     }
@@ -478,7 +511,7 @@ async function generateKeyword(level = 'medium') {
   const pool = kwPools[level];
   while (pool.length) {
     const kw = pool.shift();
-    if (!isRecentWord(kw.word)) { refillKeywordPool(level); return kw; }
+    if (!isRecentKw(kw)) { refillKeywordPool(level); return kw; }
   }
   refillKeywordPool(level);
   return generateKeywordSlow(level);
@@ -487,13 +520,14 @@ setTimeout(async () => { for (const lv of ['medium', 'easy', 'hard']) await refi
 // 난이도별 출제 기준과 힌트(field) 스타일
 const KW_LEVEL = {
   easy: {
-    rule: '- 난이도는 아주 쉽게: 초등학교 고학년(4~6학년)도 듣자마자 뜻을 아는, 뉴스·학교·스마트폰에서 자주 들어 본 낱말이어야 해. (좋은 예: 딥페이크, 챗봇, 얼굴 인식, 음성 합성, 자율주행차, 가짜 영상, 추천 영상, 스마트 스피커) ' +
+    rule: '- 난이도는 아주 쉽게: 초등학교 고학년(4~6학년)도 듣자마자 뜻을 아는, 뉴스·학교·스마트폰에서 자주 들어 본 낱말이어야 해. (좋은 예: 딥페이크, 챗봇, 가짜 영상, 추천 영상, 스마트 스피커, AI 그림, 음성 비서, 자율주행차) ' +
       '2~5글자 한국어 낱말. 한자어 개념어, 추상적인 낱말, 영어 약어, 전문 용어는 고르지 마.\n',
     field: '- field: 플레이어에게 보여 줄 아주 친절하고 구체적인 힌트(15자 이내, 예: "가짜 영상·사진과 관련"). 키워드 자체나 그 일부는 쓰지 마.\n',
     note: '쉬운 낱말이어도 괜찮지만, 최근에 나온 것과는 달라야 해.',
   },
   medium: {
-    rule: '- 난이도는 보통: 중학교 1학년이 듣자마자 뜻을 아는, 일상에서 자주 쓰는 낱말이어야 해. (좋은 예: 딥페이크, 알고리즘 편향, 환각, 학습 데이터, 생성형 AI, 얼굴 인식, 음성 합성, 필터 버블) ' +
+    rule: '- 난이도는 보통: 중학교 1학년이 듣자마자 뜻을 아는, 일상에서 자주 쓰는 낱말이어야 해. (좋은 예: 알고리즘 편향, 환각, 학습 데이터, 필터 버블, 워터마크, AI 탐지기, 맞춤 광고, 데이터 수집) ' +
+      '쉬운 단계에서 쓰는 기본 낱말(딥페이크, 챗봇, 얼굴 인식, 음성 합성, 자율주행차, 스마트 스피커, 생성형 AI)은 고르지 마. ' +
       '2~5글자 한국어 낱말. 전문 용어, 추상적인 개념어(예: 책임성, 설명 가능성, 디지털 시민성), 영어 약어는 고르지 마.\n',
     field: '- field: 플레이어에게 보여 줄 친절하고 구체적인 힌트(15자 이내, 예: "인터넷 글과 관련", "사진·영상과 관련"). 키워드 자체나 그 일부는 쓰지 마.\n',
     note: '개인정보, 딥페이크, 가짜 뉴스처럼 너무 뻔한 낱말은 피하고, 세부 주제에 어울리는 다른 낱말을 골라.',
@@ -506,11 +540,15 @@ const KW_LEVEL = {
   },
 };
 async function generateKeywordSlow(level = 'medium', extraAvoid = []) {
+  level = cleanLevel(level);
   let lastDup = '';
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const kw = await generateKeywordOnce(level, lastDup, extraAvoid);
+  // 다른 난이도에 준비해 둔 낱말(쉬움·어려움 목록 등)과 창고에 든 낱말은 이 난이도에서 쓰지 않습니다.
+  const otherLevel = KEYWORDS.filter(k => levelOfWord(k) !== level);
+  const banned = [...extraAvoid, ...otherLevel];
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const kw = await generateKeywordOnce(level, lastDup, banned.map(k => k.word));
     if (!kw) continue;
-    if (isRecentWord(kw.word) || extraAvoid.some(w => norm(w) === norm(kw.word))) { lastDup = kw.word; continue; } // 최근에 나온 낱말이면 다시 뽑습니다
+    if (isRecentKw(kw) || banned.some(k => sameWord(wordKeys(kw), wordKeys(k)))) { lastDup = kw.word; continue; } // 최근·다른 난이도에 나온 낱말이면 다시 뽑습니다
     if (!(await isAiEthicsWord(kw))) { lastDup = kw.word; console.warn('AI 윤리와 무관해서 버린 키워드:', kw.word); continue; } // 한 번 더 검수
     return kw;
   }
@@ -541,7 +579,7 @@ async function generateKeywordOnce(level, justDuplicated, extraAvoid = []) {
       '- aliases: 정답으로 인정할 다른 표현·띄어쓰기를 바꾼 형태·영어 표기·비슷한 말 3~6개. 넉넉하게 넣어.\n' +
       lv.field +
       '- desc: 게임이 끝나고 보여 줄 설명. 뜻과 왜 윤리적으로 중요한지 ' + (level === 'easy' ? '초등학생도 알아듣게 쉬운 말로' : '중학생 눈높이로') + ' 두 문장(90자 이내).',
-    messages: [{ role: 'user', content: `이번 판의 분야: ${theme}\n이번 판의 세부 주제: ${sub} (이 주제와 바로 이어지는 낱말을 골라)\n${lv.note}\n최근에 나온 키워드(이번엔 반드시 다른 것으로): ${[...recentWords.slice(-50), ...extraAvoid].join(', ') || '(없음)'}${justDuplicated ? `\n방금 "${justDuplicated}"를 골랐는데 최근에 나온 낱말이야. 다른 낱말로 골라.` : ''}` }],
+    messages: [{ role: 'user', content: `이번 판의 분야: ${theme}\n이번 판의 세부 주제: ${sub} (이 주제와 바로 이어지는 낱말을 골라)\n${lv.note}\n최근에 나온 키워드(이번엔 반드시 다른 것으로): ${[...recentWords.slice(-100), ...extraAvoid].join(', ') || '(없음)'}${justDuplicated ? `\n방금 "${justDuplicated}"를 골랐는데 최근에 나온 낱말이야. 다른 낱말로 골라.` : ''}` }],
     schema: {
       type: 'object',
       properties: { word: { type: 'string' }, aliases: { type: 'array', items: { type: 'string' } }, field: { type: 'string' }, desc: { type: 'string' } },
@@ -652,7 +690,7 @@ router.post('/twenty/start', rateLimit, async (req, res) => {
     console.error('키워드 생성 실패, 준비된 목록 사용:', e.message);
     kw = pickFallbackKeyword(level); generated = false;
   }
-  rememberWord(kw.word);
+  rememberWord(kw.word, kw.aliases);
   const s = {
     id: crypto.randomUUID(), mode, level, kw, generated,
     log: [], turnsLeft: { ...TURNS[mode] }, next: 'me', finished: false, winner: null, busy: false, createdAt: Date.now(),
