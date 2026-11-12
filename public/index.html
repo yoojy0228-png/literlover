@@ -1605,6 +1605,24 @@ async function ensureClaude() {
   } catch { alert("게임 서버에 연결할 수 없어요. 서버(node server.js)가 실행 중인지 확인해 주세요."); }
   return false;
 }
+/* 문해력: AI가 만든 2지선다 문제를 받아 옵니다. 서버에 미리 만들어 둔 묶음이 있으면 바로 오고, 실패하면 빈 목록이라 준비된 문제만 씁니다. */
+let litSeen = [], litFetching = false;
+async function fetchLiteracy(timeoutMs) {
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), timeoutMs);
+  try {
+    const r = await fetch("/api/ai/literacy-questions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ count: 10, avoid: litSeen.slice(-40) }), signal: ctl.signal });
+    if (!r.ok) return [];
+    const d = await r.json();
+    const items = (d.items || []).filter(it => it && it.q && Array.isArray(it.a) && it.a.length === 2 && (it.c === 0 || it.c === 1) && it.e);
+    items.forEach(it => litSeen.push(it.q));
+    return items;
+  } catch { return []; } finally { clearTimeout(t); }
+}
+function topUpLiteracy() {
+  if (litFetching || settings.topic !== "문해력") return;
+  litFetching = true;
+  fetchLiteracy(15000).then(items => { if (items.length && game?.running) pool.push(...shuffle(items)); }).finally(() => { litFetching = false; });
+}
 async function launchGame() {
   if (settings.topic === "가짜 판별" || settings.topic === "AI 윤리") {
     if (!(await ensureClaude())) { show("home"); return; }
@@ -1614,6 +1632,11 @@ async function launchGame() {
   if (settings.topic === "AI 윤리") { startTwenty(); return; }
   stop();
   pool = shuffle(BANK[settings.topic]);
+  if (settings.topic === "문해력") {
+    litSeen = [];
+    const fresh = await fetchLiteracy(3500); // 느리거나 AI가 안 되면 준비된 문제만으로 바로 시작합니다
+    if (fresh.length) pool = shuffle([...fresh, ...pool]);
+  }
   game = { stage: 0, hp: 3, score: 0, aiScore: 0, attempts: 0, correct: 0, wrong: [], used: 0, running: true };
   $("battle").classList.toggle("show", settings.mode === "ai");
   $("healthLabel").textContent = settings.mode === "ai" ? "BATTLE" : "HEALTH";
@@ -1639,6 +1662,7 @@ function curtainReveal(onOpen, tone) {
 function nextQuestion() {
   if (!game?.running) return;
   if (settings.mode === "single" && game.hp <= 0) { endGame("GAME OVER", "생명을 모두 잃었습니다."); return; }
+  if (settings.topic === "문해력" && pool.length - game.used < 5) topUpLiteracy(); // 문제가 바닥나기 전에 AI에게 더 받아 둡니다
   if (game.used >= pool.length) { endGame("QUIZ COMPLETE", "이 주제의 문제를 모두 풀었습니다!"); return; }
   const item = pool[game.used++], order = Math.random() < .5 ? [0, 1] : [1, 0];
   q = { ...item, options: order.map(i => item.a[i]), correctPosition: order.indexOf(item.c), elapsed: 0, duration: Math.max(2800, 9500 - Math.floor(game.stage / 5) * 700) };
