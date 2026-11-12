@@ -274,12 +274,37 @@ function pickFallbackKeyword() {
   const pool = fresh.length ? fresh : KEYWORDS;
   return pool[crypto.randomInt(pool.length)];
 }
+// 미리 만들어 둔 키워드 창고: 게임을 시작할 때 Claude를 기다리지 않고 바로 꺼내 쓰고, 부족해지면 뒤에서 다시 채웁니다.
+const KW_POOL_SIZE = 3;
+const kwPool = [];
+let kwFilling = false, kwFailUntil = 0;
+async function refillKeywordPool() {
+  if (kwFilling || !isConfigured() || Date.now() < kwFailUntil) return;
+  kwFilling = true;
+  try {
+    while (kwPool.length < KW_POOL_SIZE) {
+      let kw;
+      try { kw = await generateKeywordSlow(kwPool.map(k => k.word)); }
+      catch (e) { kwFailUntil = Date.now() + 30000; console.warn('키워드 미리 만들기 실패:', e.message); break; }
+      kwPool.push(kw);
+    }
+  } finally { kwFilling = false; }
+}
 async function generateKeyword() {
+  while (kwPool.length) {
+    const kw = kwPool.shift();
+    if (!isRecentWord(kw.word)) { refillKeywordPool(); return kw; }
+  }
+  refillKeywordPool();
+  return generateKeywordSlow();
+}
+setTimeout(() => { refillKeywordPool(); }, 1000).unref(); // 서버를 켜면 미리 준비해 둡니다
+async function generateKeywordSlow(extraAvoid = []) {
   let lastDup = '';
   for (let attempt = 0; attempt < 3; attempt++) {
-    const kw = await generateKeywordOnce(lastDup);
+    const kw = await generateKeywordOnce(lastDup, extraAvoid);
     if (!kw) continue;
-    if (isRecentWord(kw.word)) { lastDup = kw.word; continue; } // 최근에 나온 낱말이면 다시 뽑습니다
+    if (isRecentWord(kw.word) || extraAvoid.some(w => norm(w) === norm(kw.word))) { lastDup = kw.word; continue; } // 최근에 나온 낱말이면 다시 뽑습니다
     if (!(await isAiEthicsWord(kw))) { lastDup = kw.word; console.warn('AI 윤리와 무관해서 버린 키워드:', kw.word); continue; } // 한 번 더 검수
     return kw;
   }
@@ -300,7 +325,7 @@ async function isAiEthicsWord(kw) {
     return out.aiEthics === true;
   } catch { return false; }
 }
-async function generateKeywordOnce(justDuplicated) {
+async function generateKeywordOnce(justDuplicated, extraAvoid = []) {
   const { theme, sub } = pickKeywordTopic();
   const out = await askJSON({
     system: '너는 중학생을 위한 "AI 윤리 스무고개"의 출제자야. 쉽게 맞힐 수 있는 비밀 키워드 하나를 골라.\n' +
@@ -310,7 +335,7 @@ async function generateKeywordOnce(justDuplicated) {
       '- aliases: 정답으로 인정할 다른 표현·띄어쓰기를 바꾼 형태·영어 표기·비슷한 말 3~6개. 넉넉하게 넣어.\n' +
       '- field: 플레이어에게 보여 줄 친절하고 구체적인 힌트(15자 이내, 예: "인터넷 글과 관련", "사진·영상과 관련"). 키워드 자체나 그 일부는 쓰지 마.\n' +
       '- desc: 게임이 끝나고 보여 줄 설명. 뜻과 왜 윤리적으로 중요한지 중학생 눈높이로 두 문장(90자 이내).',
-    messages: [{ role: 'user', content: `이번 판의 분야: ${theme}\n이번 판의 세부 주제: ${sub} (이 주제와 바로 이어지는 낱말을 골라)\n개인정보, 딥페이크, 가짜 뉴스처럼 너무 뻔한 낱말은 피하고, 세부 주제에 어울리는 다른 낱말을 골라.\n최근에 나온 키워드(이번엔 반드시 다른 것으로): ${recentWords.slice(-50).join(', ') || '(없음)'}${justDuplicated ? `\n방금 "${justDuplicated}"를 골랐는데 최근에 나온 낱말이야. 다른 낱말로 골라.` : ''}` }],
+    messages: [{ role: 'user', content: `이번 판의 분야: ${theme}\n이번 판의 세부 주제: ${sub} (이 주제와 바로 이어지는 낱말을 골라)\n개인정보, 딥페이크, 가짜 뉴스처럼 너무 뻔한 낱말은 피하고, 세부 주제에 어울리는 다른 낱말을 골라.\n최근에 나온 키워드(이번엔 반드시 다른 것으로): ${[...recentWords.slice(-50), ...extraAvoid].join(', ') || '(없음)'}${justDuplicated ? `\n방금 "${justDuplicated}"를 골랐는데 최근에 나온 낱말이야. 다른 낱말로 골라.` : ''}` }],
     schema: {
       type: 'object',
       properties: { word: { type: 'string' }, aliases: { type: 'array', items: { type: 'string' } }, field: { type: 'string' }, desc: { type: 'string' } },
