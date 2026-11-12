@@ -1545,6 +1545,9 @@ document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("rulesO
 /* ---------- 설정 화면 ---------- */
 function updateSetupLabels() {
   const fake = settings.topic === "가짜 판별", modes = $("modes");
+  const lit = settings.topic === "문해력"; // 문해력은 플레이 방식이 하나뿐이라 난이도만 보여 줍니다
+  $("modeChoiceLabel").hidden = lit; modes.hidden = lit;
+  document.querySelector("#modeScreen .setup-head h1").textContent = lit ? "난이도 선택" : "플레이 모드 선택";
   $("modeChoiceLabel").textContent = fake ? "함께 겨룰 AI 수" : "플레이 방식";
   if (fake) {
     // AI 수는 하나의 조절기(−/+)로 1~4명 중에서 고릅니다.
@@ -1566,7 +1569,7 @@ function updateSetupLabels() {
   }
   const label = fake ? `리터러봇 ${settings.territoryAIs}명` : settings.topic === "AI 윤리" ? (settings.mode === "ai" ? "리터러봇 대전" : "혼자 도전") : "싱글";
   const dName = (DIFF.find(d => d[0] === settings.diff) || DIFF[1])[2];
-  $("modeSelectionStatus").textContent = "현재 선택: " + (fake ? `도트 앤 박스 · 나 + ${label}` : label) + " · 난이도 " + dName;
+  $("modeSelectionStatus").textContent = lit ? "현재 선택: 난이도 " + dName : "현재 선택: " + (fake ? `도트 앤 박스 · 나 + ${label}` : label) + " · 난이도 " + dName;
   $("chosenTopic").textContent = settings.topic;
   $("levels").innerHTML = DIFF.map(([v, ic, t]) => `<button type="button" class="choice ${settings.diff === v ? "selected" : ""}" data-diff="${v}" aria-pressed="${settings.diff === v}"><span class="ch-ic">${ic}</span><b>${t}</b></button>`).join("");
   $("levelDesc").textContent = (DIFF_DESC[settings.topic] || DIFF_DESC["문해력"])[settings.diff];
