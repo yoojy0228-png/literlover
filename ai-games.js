@@ -33,7 +33,7 @@ const pattern = word => word.split('').map(ch => (ch === ' ' ? ' ' : '○')).joi
 
 /* ---------- 출제 기록: 판이 바뀌거나 서버를 다시 켜도 같은 문제가 반복되지 않게 파일에 남겨 둡니다 ---------- */
 const HISTORY_FILE = path.join(__dirname, 'ai-history.json');
-const history = { facts: [], factTopics: [], words: [], wordTopics: [] };
+const history = { facts: [], factTopics: [], words: [], wordTopics: [], lit: [], litTopics: [] };
 try { Object.assign(history, JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8'))); } catch { /* 처음 실행이면 기록이 없습니다 */ }
 for (const k of Object.keys(history)) if (!Array.isArray(history[k])) history[k] = [];
 let saveTimer = null;
@@ -275,6 +275,119 @@ async function generateFactItems(count, fromClient) {
   }
   return items;
 }
+
+/* ---------- 문해력: Claude가 2지선다 어휘·맞춤법 문제를 출제 ---------- */
+const LIT_TOPICS = {
+  '헷갈리는 낱말': ['결제/결재처럼 소리가 비슷한 한자어', '유예/유보 같은 뜻이 가까운 낱말', '지양/지향처럼 반대로 알기 쉬운 말', '추론/추측 같은 사고 관련 낱말', '간과/간주/묵과 같은 판단 관련 낱말', '납득/설득/이해 구분하기'],
+  '맞춤법': ['맞히다/맞추다', '낫다/낳다/낮다', '되/돼', '안/않', '율/률', '며칠/몇일', '왠지/웬', '던/든'],
+  '뜻이 다른 말': ['가리키다/가르치다', '다르다/틀리다', '부치다/붙이다', '반드시/반듯이', '이따가/있다가', '들르다/들리다', '늘이다/늘리다'],
+  '어려운 낱말 뜻': ['공지문에 나오는 한자어(금일·명일·익일 등)', '심심한·사흘·나흘 같은 오해하기 쉬운 말', '여부/유무 같은 한자어', '시사·뉴스에 나오는 낱말', '학교 안내문에 나오는 낱말'],
+  '문장 표현': ['높임 표현(주체·객체 높임)', '문장 호응(주어와 서술어)', '이중 피동·불필요한 표현', '흔한 관용 표현의 올바른 사용', '속담의 뜻과 쓰임'],
+  '띄어쓰기': ['의존 명사(것·수·바)', '조사와 단어 구분', '단위 명사', '~할 만하다 같은 보조 용언'],
+  '글 읽기': ['문장에서 중심 낱말 찾기', '근거에 맞는 결론 고르기', '글쓴이의 의도 파악하기', '사실과 의견 구분하기'],
+};
+function pickLitSlots(count) {
+  const all = [];
+  for (const [topic, subs] of Object.entries(LIT_TOPICS)) for (const sub of subs) all.push({ topic, sub });
+  const fresh = all.filter(s => !history.litTopics.includes(s.sub));
+  const pool = shuffled(fresh.length >= count ? fresh : all);
+  const picked = [], perTopic = {};
+  for (const s of pool) {
+    if ((perTopic[s.topic] || 0) >= 3) continue;
+    picked.push(s); perTopic[s.topic] = (perTopic[s.topic] || 0) + 1;
+    if (picked.length >= count) break;
+  }
+  return picked;
+}
+const LIT_SCHEMA = {
+  type: 'object',
+  properties: {
+    items: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: { q: { type: 'string' }, right: { type: 'string' }, wrong: { type: 'string' }, why: { type: 'string' } },
+        required: ['q', 'right', 'wrong', 'why'],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ['items'],
+  additionalProperties: false,
+};
+async function generateLitItems(count, fromClient) {
+  const known = [...history.lit, ...fromClient];
+  const items = [];
+  for (let attempt = 0; attempt < 2 && items.length < Math.ceil(count * 0.6); attempt++) {
+    const slots = pickLitSlots(count - items.length);
+    const shown = [...new Set([...history.lit.slice(-30), ...fromClient, ...items.map(i => i.q)])].slice(-50);
+    let out;
+    try {
+      out = await askJSON({
+        system: '너는 청소년 "문해력" 퀴즈 게임의 문제 출제자야. 중학생이 풀 수 있는 한국어 2지선다 문제를 만들어.\n' +
+          '- 번호마다 지정된 "분야 · 세부 주제"에 맞춰 문제를 정확히 하나씩, 번호 순서대로 만들어.\n' +
+          '- q: 상황이나 문장을 주고 알맞은 말·표현을 묻는 문제(120자 이내). 어색한 말이 들어갈 자리는 문제 안에서 드러나게 쓰되 정답을 q에 그대로 쓰지 마.\n' +
+          '- right: 표준국어대사전 기준으로 정답인 선택지. wrong: 헷갈리기 쉬운 오답 선택지. 둘 다 20자 이내이고 서로 달라야 해.\n' +
+          '- 정답이 하나로 딱 정해지는 문제만 내. 사전마다 다르거나 논란이 있는 표기, 방언, 신조어는 빼.\n' +
+          '- why: 왜 right가 맞는지 두 낱말의 차이를 중학생 눈높이로 70자 이내 한두 문장으로 설명.\n' +
+          '- 이미 나온 문제나 같은 낱말 쌍은 다시 쓰지 말고, 같은 주제여도 다른 낱말·다른 상황을 골라.',
+        messages: [{ role: 'user', content: `문제 ${slots.length}개를 만들어 줘.\n${slots.map((s, i) => `${i + 1}. ${s.topic} · ${s.sub}`).join('\n')}\n\n이미 나온 문제(같은 내용이나 비슷한 말도 쓰지 마):\n${shown.length ? shown.map(t => '- ' + t).join('\n') : '(없음)'}` }],
+        schema: LIT_SCHEMA,
+      });
+    } catch (e) {
+      if (items.length) break;
+      throw e;
+    }
+    slots.forEach(s => remember(history.litTopics, s.sub, 20));
+    for (const it of out.items || []) {
+      const q = String(it.q || '').trim().slice(0, 160), why = String(it.why || '').trim().slice(0, 200);
+      const right = String(it.right || '').trim().slice(0, 30), wrong = String(it.wrong || '').trim().slice(0, 30);
+      if (!q || !why || !right || !wrong || norm(right) === norm(wrong)) continue;
+      if (known.some(k => similar(k, q)) || items.some(i => similar(i.q, q))) continue;
+      // 정답 위치는 서버가 무작위로 정해서 AI가 한쪽으로 치우치지 않게 합니다.
+      const rightFirst = crypto.randomInt(2) === 0;
+      items.push({ q, a: rightFirst ? [right, wrong] : [wrong, right], c: rightFirst ? 0 : 1, e: why });
+    }
+  }
+  return items;
+}
+const LIT_POOL_SIZE = 2, LIT_BATCH_COUNT = 10;
+const litPool = [];
+let litFilling = false, litFailUntil = 0;
+async function refillLitPool() {
+  if (litFilling || !isConfigured() || Date.now() < litFailUntil) return;
+  litFilling = true;
+  try {
+    while (litPool.length < LIT_POOL_SIZE) {
+      let items;
+      try { items = await generateLitItems(LIT_BATCH_COUNT, litPool.flat().map(i => i.q)); }
+      catch (e) { litFailUntil = Date.now() + 30000; console.warn('문해력 문제 미리 만들기 실패:', e.message); break; }
+      if (!items.length) { litFailUntil = Date.now() + 30000; break; }
+      litPool.push(items);
+    }
+  } finally { litFilling = false; }
+}
+setTimeout(() => { refillLitPool(); }, 2500).unref();
+async function takeLitBatch(count, fromClient) {
+  if (count === LIT_BATCH_COUNT) {
+    while (litPool.length) {
+      const items = litPool.shift().filter(i => !fromClient.some(k => similar(k, i.q)));
+      if (items.length >= Math.ceil(count * 0.6)) { refillLitPool(); return items; }
+    }
+    refillLitPool();
+  }
+  return generateLitItems(count, fromClient);
+}
+router.post('/literacy-questions', rateLimit, async (req, res) => {
+  const count = Math.min(12, Math.max(3, Number(req.body?.count) || LIT_BATCH_COUNT));
+  const fromClient = (Array.isArray(req.body?.avoid) ? req.body.avoid : []).slice(-40).map(t => String(t).slice(0, 160));
+  try {
+    const items = await takeLitBatch(count, fromClient);
+    if (!items.length) return res.status(502).json({ message: 'Claude가 새로운 문제를 만들지 못했어요.' });
+    items.forEach(i => remember(history.lit, i.q, 200));
+    res.json({ items });
+  } catch (e) { sendError(res, e); }
+});
 
 /* ---------- AI 윤리 스무고개 ---------- */
 // 최근에 나온 키워드는 다시 나오지 않게 기억해 둡니다. (파일에도 저장되어 서버를 다시 켜도 남아요)
