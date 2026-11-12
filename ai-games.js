@@ -209,7 +209,7 @@ const FACT_SCHEMA = {
   additionalProperties: false,
 };
 // 문제 창고: 8개짜리 묶음을 미리 만들어 두었다가 게임이 시작되면 바로 줍니다.
-const FACT_POOL_SIZE = 2, FACT_BATCH_COUNT = 8;
+const FACT_POOL_SIZE = 3, FACT_BATCH_COUNT = 8;
 const factPool = [];
 let factFilling = false, factFailUntil = 0;
 async function refillFactPool() {
@@ -371,8 +371,8 @@ async function generateLitItems(level, count, fromClient) {
   }
   return items;
 }
-// 난이도마다 창고가 따로 있습니다. 가장 많이 쓰는 "보통"만 넉넉히 쌓아 둡니다.
-const LIT_POOL_SIZE = { easy: 1, medium: 2, hard: 1 }, LIT_BATCH_COUNT = 10;
+// 난이도마다 창고가 따로 있고, 난이도와 상관없이 모두 3묶음씩 쌓아 둡니다.
+const LIT_POOL_SIZE = { easy: 3, medium: 3, hard: 3 }, LIT_BATCH_COUNT = 10;
 const litPools = { easy: [], medium: [], hard: [] };
 const litState = { easy: { filling: false, failUntil: 0 }, medium: { filling: false, failUntil: 0 }, hard: { filling: false, failUntil: 0 } };
 async function refillLitPool(level) {
@@ -448,8 +448,8 @@ function pickFallbackKeyword(level = 'medium') {
   return pool[crypto.randomInt(pool.length)];
 }
 // 미리 만들어 둔 키워드 창고: 게임을 시작할 때 Claude를 기다리지 않고 바로 꺼내 쓰고, 부족해지면 뒤에서 다시 채웁니다.
-// 난이도마다 창고가 따로 있고, 가장 많이 쓰는 "보통"만 넉넉히 쌓아 둡니다.
-const KW_POOL_SIZE = { easy: 1, medium: 3, hard: 1 };
+// 난이도마다 창고가 따로 있고, 난이도와 상관없이 모두 3개씩 쌓아 둡니다.
+const KW_POOL_SIZE = { easy: 3, medium: 3, hard: 3 };
 const kwPools = { easy: [], medium: [], hard: [] };
 const kwState = { easy: { filling: false, failUntil: 0 }, medium: { filling: false, failUntil: 0 }, hard: { filling: false, failUntil: 0 } };
 async function refillKeywordPool(level) {
