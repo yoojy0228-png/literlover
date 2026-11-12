@@ -208,6 +208,12 @@ body[data-screen="game"] footer,body[data-screen="territory"] footer,body[data-s
 .choice.selected::after{content:"✓";position:absolute;top:-.65rem;right:-.5rem;width:1.9rem;height:1.9rem;display:grid;place-items:center;border-radius:50%;
   background:var(--blue);color:#fff;border:2px solid #fff;font:700 1rem/1 var(--font-body);box-shadow:0 2px 0 var(--blue-d)}
 #modeSelectionStatus{margin:1rem 0 0;text-align:center}
+/* 난이도 선택 (쉬움·보통·어려움) */
+#levelLabel{margin-top:1.3rem}
+#levels .choice{min-height:0;padding:.7rem .5rem;gap:.15rem}
+#levels .choice .ch-ic{font-size:1.7rem}
+#levels .choice b{font-size:1.25rem}
+#levelDesc{margin:.9rem 0 0;text-align:center}
 /* 도트 앤 박스: 칸이 완성되면 연필로 칠하는 모션 */
 @keyframes pencilDraw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
 @keyframes pencilFade { from { opacity: 0; } to { opacity: 1; } }
@@ -909,6 +915,9 @@ input,select,textarea{font-size:max(16px,1.05rem)!important}
     <div class="panel">
       <p class="label" id="modeChoiceLabel">플레이 방식</p>
       <div class="choices two" id="modes"></div>
+      <p class="label" id="levelLabel">난이도</p>
+      <div class="choices" id="levels" role="group" aria-label="난이도 선택"></div>
+      <p class="muted" id="levelDesc" aria-live="polite"></p>
       <p class="muted" id="modeSelectionStatus" aria-live="polite"></p>
       <div class="actions"><button class="secondary" id="backToTopics">← 주제 선택</button><button class="primary" id="toNextSetup">다음 →</button></div>
     </div>
@@ -1375,7 +1384,14 @@ function show(id) {
 }
 
 const AI_LEVEL = { easy: { aiDelay: 4300, aiChance: .45 }, medium: { aiDelay: 2600, aiChance: .70 }, hard: { aiDelay: 1200, aiChance: .90 } };
-const settings = { topic: "문해력", mode: "single", level: "easy", territoryAIs: 1 };
+const settings = { topic: "문해력", mode: "single", level: "easy", territoryAIs: 1, diff: "medium" };
+/* 난이도 (쉬움·보통·어려움): 게임마다 바뀌는 대상이 달라요. 문해력=문제, 가짜 판별=AI 실력, AI 윤리=키워드 */
+const DIFF = [["easy", "🌱", "쉬움"], ["medium", "🌿", "보통"], ["hard", "🔥", "어려움"]];
+const DIFF_DESC = {
+  "문해력": { easy: "초등학생도 풀 수 있는 쉬운 낱말·맞춤법 문제", medium: "중학생 수준의 문제", hard: "헷갈리는 한자어·문장 호응·관용 표현까지, 깊이 읽어야 하는 문제" },
+  "가짜 판별": { easy: "문제는 같고, 리터러봇이 자주 틀리고 칸을 쉽게 내줘요", medium: "문제는 같고, 리터러봇이 가끔 틀려요", hard: "문제는 같고, 리터러봇이 거의 안 틀리고 칸을 잘 지켜요" },
+  "AI 윤리": { easy: "초등학생도 아는 쉬운 키워드 · 힌트도 친절해요", medium: "중학생이 아는 일상적인 AI 윤리 키워드", hard: "AI 윤리를 배운 사람도 깊이 생각해야 하는 개념어" },
+};
 let game = null, pool = [], q = null, raf = 0, timer = null, locked = false, aiAnswered = false, lastFrame = 0;
 function stop() { if (raf) cancelAnimationFrame(raf); raf = 0; if (timer !== null) clearTimeout(timer); timer = null; }
 
@@ -1549,15 +1565,25 @@ function updateSetupLabels() {
       .map(([v, ic, t, d]) => `<button type="button" class="choice ${settings.mode === v ? "selected" : ""}" data-v="${v}"><span class="ch-ic">${ic}</span><b>${t}</b><small>${d}</small></button>`).join("");
   }
   const label = fake ? `리터러봇 ${settings.territoryAIs}명` : settings.topic === "AI 윤리" ? (settings.mode === "ai" ? "리터러봇 대전" : "혼자 도전") : "싱글";
-  $("modeSelectionStatus").textContent = "현재 선택: " + (fake ? `도트 앤 박스 · 나 + ${label}` : label);
+  const dName = (DIFF.find(d => d[0] === settings.diff) || DIFF[1])[2];
+  $("modeSelectionStatus").textContent = "현재 선택: " + (fake ? `도트 앤 박스 · 나 + ${label}` : label) + " · 난이도 " + dName;
   $("chosenTopic").textContent = settings.topic;
+  $("levels").innerHTML = DIFF.map(([v, ic, t]) => `<button type="button" class="choice ${settings.diff === v ? "selected" : ""}" data-diff="${v}" aria-pressed="${settings.diff === v}"><span class="ch-ic">${ic}</span><b>${t}</b></button>`).join("");
+  $("levelDesc").textContent = (DIFF_DESC[settings.topic] || DIFF_DESC["문해력"])[settings.diff];
 }
 $("topics").addEventListener("click", e => {
   const b = e.target.closest("[data-v]"); if (!b) return;
   settings.topic = b.dataset.v;
-  // 문해력은 AI 대전 없이 싱글 모드만 있으므로 모드 선택 없이 바로 규칙 안내로 갑니다.
-  if (settings.topic === "문해력") { settings.mode = "single"; updateSetupLabels(); showRules(true); return; }
+  // 문해력은 싱글 모드만 있어요. 모드 화면에서는 난이도만 고르면 됩니다.
+  if (settings.topic === "문해력") settings.mode = "single";
   updateSetupLabels(); show("modeScreen");
+});
+$("levels").addEventListener("click", e => {
+  const b = e.target.closest("[data-diff]"); if (!b) return;
+  settings.diff = b.dataset.diff;
+  playSfx("click");
+  updateSetupLabels();
+  const again = $("levels").querySelector(`[data-diff="${settings.diff}"]`); if (again) again.focus();
 });
 $("modes").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b || b.disabled) return;
@@ -1606,11 +1632,11 @@ async function ensureClaude() {
   return false;
 }
 /* 문해력: AI가 만든 2지선다 문제를 받아 옵니다. 서버에 미리 만들어 둔 묶음이 있으면 바로 오고, 실패하면 빈 목록이라 준비된 문제만 씁니다. */
-let litSeen = [], litFetching = false;
+let litSeen = [], litFetching = false, litBackup = [];
 async function fetchLiteracy(timeoutMs) {
   const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), timeoutMs);
   try {
-    const r = await fetch("/api/ai/literacy-questions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ count: 10, avoid: litSeen.slice(-40) }), signal: ctl.signal });
+    const r = await fetch("/api/ai/literacy-questions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ count: 10, level: settings.diff, avoid: litSeen.slice(-40) }), signal: ctl.signal });
     if (!r.ok) return [];
     const d = await r.json();
     const items = (d.items || []).filter(it => it && it.q && Array.isArray(it.a) && it.a.length === 2 && (it.c === 0 || it.c === 1) && it.e);
@@ -1633,9 +1659,10 @@ async function launchGame() {
   stop();
   pool = shuffle(BANK[settings.topic]);
   if (settings.topic === "문해력") {
-    litSeen = [];
+    litSeen = []; litBackup = [];
     const fresh = await fetchLiteracy(3500); // 느리거나 AI가 안 되면 준비된 문제만으로 바로 시작합니다
-    if (fresh.length) pool = shuffle([...fresh, ...pool]);
+    // AI 문제는 난이도에 맞춰 만든 것이라, 난이도 구분이 없는 준비된 문제는 AI 문제가 모자랄 때만 뒤에 씁니다.
+    if (fresh.length) { litBackup = pool; pool = shuffle(fresh); }
   }
   game = { stage: 0, hp: 3, score: 0, aiScore: 0, attempts: 0, correct: 0, wrong: [], used: 0, running: true };
   $("battle").classList.toggle("show", settings.mode === "ai");
@@ -1663,6 +1690,7 @@ function nextQuestion() {
   if (!game?.running) return;
   if (settings.mode === "single" && game.hp <= 0) { endGame("GAME OVER", "생명을 모두 잃었습니다."); return; }
   if (settings.topic === "문해력" && pool.length - game.used < 5) topUpLiteracy(); // 문제가 바닥나기 전에 AI에게 더 받아 둡니다
+  if (game.used >= pool.length && litBackup.length) pool.push(...litBackup.splice(0)); // AI 문제가 바닥났을 때만 준비된 문제로 이어 갑니다
   if (game.used >= pool.length) { endGame("QUIZ COMPLETE", "이 주제의 문제를 모두 풀었습니다!"); return; }
   const item = pool[game.used++], order = Math.random() < .5 ? [0, 1] : [1, 0];
   q = { ...item, options: order.map(i => item.a[i]), correctPosition: order.indexOf(item.c), elapsed: 0, duration: Math.max(2800, 9500 - Math.floor(game.stage / 5) * 700) };
@@ -2056,6 +2084,29 @@ function chooseAIEdge(options) {
   const safe = options.filter(i => adj(i).every(([r, c]) => filled(r, c) < 2)); // 상대에게 칸을 내주지 않는 선
   return pick(safe.length ? safe : options);
 }
+/* 난이도: 도트 앤 박스는 문제가 같고 리터러봇의 실력만 달라져요.
+   쉬움 = 자료를 자주 틀리고 선도 거의 막 고름 / 보통 = 가끔 틀리고 선은 Claude가 고름 / 어려움 = 자료는 Claude가 판별하고 선은 칸을 잘 지키는 규칙대로 고름 */
+const DOTS_MISS = { easy: .2, medium: .1, hard: 0 };
+function chooseEasyAIEdge(options) {
+  const st = territoryState, n = st.size;
+  const filled = (r, c) => boxEdges(r, c).filter(ei => st.edges[ei].owner >= 0).length;
+  const completing = options.filter(i => edgeBoxes(st.edges[i], n).some(([r, c]) => filled(r, c) === 3));
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+  return completing.length && Math.random() < .4 ? pick(completing) : pick(options); // 칸을 만들 기회도 자주 놓쳐요
+}
+function chooseHardAIEdge(options) {
+  const st = territoryState, n = st.size;
+  const filled = (r, c) => boxEdges(r, c).filter(ei => st.edges[ei].owner >= 0).length;
+  const adj = i => edgeBoxes(st.edges[i], n);
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+  const completing = options.filter(i => adj(i).some(([r, c]) => filled(r, c) === 3));
+  if (completing.length) return pick(completing); // 만들 수 있는 칸은 놓치지 않아요
+  const safe = options.filter(i => adj(i).every(([r, c]) => filled(r, c) < 2));
+  if (safe.length) return pick(safe); // 상대에게 칸을 내주지 않는 선
+  const cost = i => adj(i).filter(([r, c]) => filled(r, c) === 2).length; // 어쩔 수 없을 땐 가장 적게 내주는 선
+  const least = Math.min(...options.map(cost));
+  return pick(options.filter(i => cost(i) === least));
+}
 /* 비밀 코드 0133: AI가 문제는 그대로 풀지만 일부러 3변짜리 칸을 만드는 선만 골라 상대에게 칸을 내줍니다. */
 let dumbAI = false;
 function chooseDumbAIEdge(options) {
@@ -2095,7 +2146,8 @@ async function runAITurn() {
   // AI가 고른 선을 보여 준 뒤 결과를 적용합니다. 연결 문제가 생기면 이번 차례만 기본 규칙으로 선을 고릅니다.
   const pickIdx = result.ok ? st.idx[result.line] : chooseAIEdge(options);
   const usable = pickIdx !== undefined && st.edges[pickIdx] && st.edges[pickIdx].owner < 0;
-  const finalIdx = dumbAI ? chooseDumbAIEdge(options) : usable ? pickIdx : chooseAIEdge(options);
+  const lv = settings.diff;
+  const finalIdx = dumbAI ? chooseDumbAIEdge(options) : lv === "easy" ? chooseEasyAIEdge(options) : lv === "hard" ? chooseHardAIEdge(options) : usable ? pickIdx : chooseAIEdge(options);
   st.aiPick = finalIdx; renderTerritory();
   territoryTimer = setTimeout(() => applyAIJudgement(st, p, finalIdx, q, result), Math.max(700, 1200 - (Date.now() - started)));
 }
@@ -2103,12 +2155,17 @@ function applyAIJudgement(live, p, pickIdx, q, result) {
   if (territoryState !== live || live.finished || live.currentPlayer !== p) return;
   const name = `${TERRITORY_NAMES[p]}`;
   let correct, said;
+  const miss = dumbAI ? 0 : (DOTS_MISS[settings.diff] ?? 0);
   if (result.ok) {
     correct = result.answer === q.answer;
     said = `"${result.answer === "real" ? "진짜" : "가짜"}"라고 판별 — ${result.reason}`;
+    if (correct && Math.random() < miss) { // 난이도가 낮을수록 가끔 헷갈려서 틀려요
+      correct = false;
+      said = `"${q.answer === "real" ? "가짜" : "진짜"}"라고 판별 — 헷갈려서 잘못 골랐어요`;
+    }
   } else {
     // 연결 문제가 생기면 게임이 멈추지 않도록 이번 차례만 임시로 판정합니다.
-    correct = Math.random() < AI_ACCURACY[p];
+    correct = Math.random() < AI_ACCURACY[p] * (1 - miss);
     said = `연결 문제로 이번 차례는 기본 규칙으로 선을 고르고 임시 판정했어요 (${result.err.message})`;
   }
   let gained = 0;
@@ -2268,7 +2325,7 @@ async function startTwenty() {
   show("twenty"); twRenderInfo(); twSetBusy(true, "");
   showGenerating();
   try {
-    const st = await twApi("start", { mode: settings.mode });
+    const st = await twApi("start", { mode: settings.mode, level: settings.diff });
     if (gen !== tw.gen) return;
     tw.state = st;
   } catch (e) {
