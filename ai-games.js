@@ -199,13 +199,50 @@ const FACT_SCHEMA = {
   required: ['items'],
   additionalProperties: false,
 };
+// 문제 창고: 8개짜리 묶음을 미리 만들어 두었다가 게임이 시작되면 바로 줍니다.
+const FACT_POOL_SIZE = 2, FACT_BATCH_COUNT = 8;
+const factPool = [];
+let factFilling = false, factFailUntil = 0;
+async function refillFactPool() {
+  if (factFilling || !isConfigured() || Date.now() < factFailUntil) return;
+  factFilling = true;
+  try {
+    while (factPool.length < FACT_POOL_SIZE) {
+      let items;
+      try { items = await generateFactItems(FACT_BATCH_COUNT, factPool.flat().map(i => i.text)); }
+      catch (e) { factFailUntil = Date.now() + 30000; console.warn('문제 미리 만들기 실패:', e.message); break; }
+      if (!items.length) { factFailUntil = Date.now() + 30000; break; }
+      factPool.push(items);
+    }
+  } finally { factFilling = false; }
+}
+setTimeout(() => { refillFactPool(); }, 1500).unref();
+async function takeFactBatch(count, fromClient) {
+  if (count === FACT_BATCH_COUNT) {
+    while (factPool.length) {
+      // 이미 본 문장과 비슷한 것은 걸러 냅니다.
+      const items = factPool.shift().filter(i => !fromClient.some(k => similar(k, i.text)));
+      if (items.length >= Math.ceil(count * 0.6)) { refillFactPool(); return items; }
+    }
+    refillFactPool();
+  }
+  return generateFactItems(count, fromClient);
+}
 router.post('/fact-questions', rateLimit, async (req, res) => {
   const count = Math.min(10, Math.max(3, Number(req.body?.count) || 8));
   const fromClient = (Array.isArray(req.body?.avoid) ? req.body.avoid : []).slice(-40).map(t => String(t).slice(0, 120));
+  try {
+    const items = await takeFactBatch(count, fromClient);
+    if (!items.length) return res.status(502).json({ message: 'Claude가 새로운 문제를 만들지 못했어요.' });
+    items.forEach(i => remember(history.facts, i.text, 300));
+    res.json({ items });
+  } catch (e) { sendError(res, e); }
+});
+async function generateFactItems(count, fromClient) {
   // 이번 판에서 나온 것 + 서버가 기억하는 지난 판들의 문장을 모두 피합니다.
   const known = [...history.facts, ...fromClient];
   const items = [];
-  try {
+  {
     for (let attempt = 0; attempt < 2 && items.length < Math.ceil(count * 0.6); attempt++) {
       const slots = pickFactSlots(count - items.length);
       const shown = [...new Set([...history.facts.slice(-40), ...fromClient, ...items.map(i => i.text)])].slice(-60);
@@ -235,11 +272,9 @@ router.post('/fact-questions', rateLimit, async (req, res) => {
         items.push({ text, answer: it.answer === 'real' ? 'real' : 'fake', why });
       }
     }
-    if (!items.length) return res.status(502).json({ message: 'Claude가 새로운 문제를 만들지 못했어요.' });
-    items.forEach(i => remember(history.facts, i.text, 300));
-    res.json({ items });
-  } catch (e) { sendError(res, e); }
-});
+  }
+  return items;
+}
 
 /* ---------- AI 윤리 스무고개 ---------- */
 // 최근에 나온 키워드는 다시 나오지 않게 기억해 둡니다. (파일에도 저장되어 서버를 다시 켜도 남아요)
