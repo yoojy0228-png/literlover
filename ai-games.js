@@ -42,7 +42,8 @@ const pattern = word => word.split('').map(ch => (ch === ' ' ? ' ' : '○')).joi
 
 /* ---------- 출제 기록: 판이 바뀌거나 서버를 다시 켜도 같은 문제가 반복되지 않게 파일에 남겨 둡니다 ---------- */
 const HISTORY_FILE = path.join(__dirname, 'ai-history.json');
-const history = { facts: [], factTopics: [], words: [], wordTopics: [], lit: [], litTopics: [] };
+const history = { facts: [], factTopics: [], words: [], wordTopics: [], lit: [], litTopics: [], litPairs: [] };
+const pairKey = (a, b) => [norm(a), norm(b)].sort().join('|');
 try { Object.assign(history, JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8'))); } catch { /* 처음 실행이면 기록이 없습니다 */ }
 for (const k of Object.keys(history)) if (!Array.isArray(history[k])) history[k] = [];
 let saveTimer = null;
@@ -330,16 +331,21 @@ const LIT_LEVEL = {
     '세부 주제의 예시가 어려우면 같은 갈래에서 더 쉬운 낱말(예: 되/돼, 안/않, 맞히다/맞추다, 낫다/낳다, 가리키다/가르치다, 다르다/틀리다, 있다가/이따가)로 바꿔서 내. ' +
     '오답은 정답과 뜻이 확연히 달라서, 차분히 읽으면 고를 수 있어야 해. why도 초등학생이 알아듣게 쉬운 말로 써.',
   medium: '난이도: 보통 — 중학생이 풀 수 있는 수준으로 만들어. 학교생활과 일상에 나오는 낱말과 표현이 중심이야.',
-  hard: '난이도: 어려움 — 고등학생·성인도 헷갈릴 만한 수준으로 만들어. 뜻이 가까운 한자어, 문장 호응, 높임·피동 표현, 관용 표현·속담, 근거를 따져야 하는 읽기처럼 정확한 어휘력과 읽는 힘이 필요한 문제를 내. ' +
-    'q는 맥락이 있는 조금 긴 문장이어도 좋아. 오답은 그럴듯해서 깊이 생각해야 하지만, 정답은 표준국어대사전 기준으로 하나로 분명히 정해져야 해.',
+  hard: '난이도: 매우 어려움 — 성인도 자주 틀리는 수준으로 만들어. "되/돼", "안/않", "맞히다/맞추다" 같은 흔한 맞춤법과 중학생이 아는 낱말은 절대 내지 마. ' +
+    '세부 주제의 예시가 쉬우면 같은 갈래에서 훨씬 어려운 낱말로 바꿔 내. (예: 매다/메다, 반증/방증, 일절/일체, 갈음/가름, 결재/결제, 두절/단절, 불리다/붇다, 체/채, 어이없다/어의없다, 오랜만/오랫만, 문장 호응이 어긋난 긴 문장, 이중 피동, 한자 성어·관용구의 정확한 뜻, 글에서 근거와 주장 구분) ' +
+    '뜻이 아주 가까운 한자어, 높임·피동 표현의 미묘한 차이, 한자 성어·속담의 정확한 뜻, 근거를 꼼꼼히 따져야 하는 읽기 문제를 내. ' +
+    'q는 맥락이 있는 두 문장(100자 이내)이어도 좋아. 오답은 아주 그럴듯해서 깊이 생각해야 하지만, 정답은 표준국어대사전 기준으로 하나로 분명히 정해져야 해. why에 두 낱말의 정확한 차이를 밝혀.',
 };
 async function generateLitItems(level, count, fromClient) {
   level = cleanLevel(level);
-  const known = [...history.lit, ...fromClient];
+  // 다른 난이도의 창고에 쌓인 문제와도 겹치지 않게, 모든 난이도의 창고를 함께 피합니다.
+  const pooled = LEVELS.flatMap(l => litPools[l].flat());
+  const known = [...history.lit, ...fromClient, ...pooled.map(i => i.q)];
+  const usedPairs = new Set([...pooled.map(i => pairKey(i.a[0], i.a[1])), ...history.litPairs]);
   const items = [];
   for (let attempt = 0; attempt < 2 && items.length < Math.ceil(count * 0.6); attempt++) {
     const slots = pickLitSlots(count - items.length);
-    const shown = [...new Set([...history.lit.slice(-30), ...fromClient, ...items.map(i => i.q)])].slice(-50);
+    const shown = [...new Set([...history.lit.slice(-30), ...pooled.map(i => i.q).slice(-30), ...fromClient, ...items.map(i => i.q)])].slice(-60);
     let out;
     try {
       out = await askJSON({
@@ -364,6 +370,8 @@ async function generateLitItems(level, count, fromClient) {
       const right = String(it.right || '').trim().slice(0, 30), wrong = String(it.wrong || '').trim().slice(0, 30);
       if (!q || !why || !right || !wrong || norm(right) === norm(wrong)) continue;
       if (known.some(k => similar(k, q)) || items.some(i => similar(i.q, q))) continue;
+      if (usedPairs.has(pairKey(right, wrong))) continue; // 같은 낱말 쌍은 난이도가 달라도 다시 내지 않습니다
+      usedPairs.add(pairKey(right, wrong)); remember(history.litPairs, pairKey(right, wrong), 300);
       // 정답 위치는 서버가 무작위로 정해서 AI가 한쪽으로 치우치지 않게 합니다.
       const rightFirst = crypto.randomInt(2) === 0;
       items.push({ q, a: rightFirst ? [right, wrong] : [wrong, right], c: rightFirst ? 0 : 1, e: why });
