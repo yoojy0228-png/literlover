@@ -26,7 +26,16 @@ const KEYWORDS = [
   { word: '음성 합성', aliases: ['음성합성', '목소리 합성', '딥보이스', '목소리합성'], field: '소리와 관련', desc: 'AI로 사람 목소리를 똑같이 만들어 내는 기술. 사기에 악용될 수 있어 조심해야 해요.' },
   { word: '추천 알고리즘', aliases: ['추천알고리즘', '추천 시스템', '알고리즘 추천'], field: '영상·SNS와 관련', desc: 'AI가 내가 볼 만한 것을 골라 보여 주는 방식. 한쪽으로 쏠리게 만들 수 있어요.' },
   { word: '프롬프트', aliases: ['prompt', '명령어', '질문문'], field: 'AI에게 하는 말', desc: 'AI에게 일을 시키려고 입력하는 말. 개인정보를 넣지 않도록 조심해야 해요.' },
+  { word: '연합 학습', aliases: ['연합학습', 'federatedlearning', '페더레이티드 러닝'], field: '개인정보 보호 기술', desc: '데이터를 한곳에 모으지 않고 각자의 기기에서 배운 결과만 합치는 방식. 개인정보를 지키는 데 도움이 돼요.' },
+  { word: '적대적 공격', aliases: ['적대적공격', '적대적 예제', '적대적 사례', 'adversarial attack'], field: 'AI 보안', desc: 'AI가 잘못 판단하도록 입력을 살짝 바꿔 속이는 공격. AI를 믿고 쓸 때 안전 대책이 필요한 이유예요.' },
+  { word: '블랙박스 AI', aliases: ['블랙박스', '블랙박스ai', 'blackbox', '블랙박스 모델'], field: 'AI 투명성', desc: '왜 그런 결과를 냈는지 사람이 속을 알 수 없는 AI. 중요한 결정에 쓰이면 책임과 설명이 문제가 돼요.' },
 ];
+// 난이도(쉬움·보통·어려움). 준비된 키워드는 아래 목록에 없으면 "보통"으로 칩니다.
+const EASY_WORDS = new Set(['딥페이크', '안면 인식', '자율주행차', '음성 합성', '프롬프트', '생성형 AI']);
+const HARD_WORDS = new Set(['설명 가능성', '데이터 라벨링', '연합 학습', '적대적 공격', '블랙박스 AI']);
+const levelOfWord = k => (EASY_WORDS.has(k.word) ? 'easy' : HARD_WORDS.has(k.word) ? 'hard' : 'medium');
+const LEVELS = ['easy', 'medium', 'hard'];
+const cleanLevel = v => (LEVELS.includes(v) ? v : 'medium');
 
 const norm = s => String(s || '').toLocaleLowerCase('ko-KR').replace(/[\s.,!?'"~·\-_()[\]]/g, '');
 const pattern = word => word.split('').map(ch => (ch === ' ' ? ' ' : '○')).join('');
@@ -315,7 +324,17 @@ const LIT_SCHEMA = {
   required: ['items'],
   additionalProperties: false,
 };
-async function generateLitItems(count, fromClient) {
+// 난이도마다 문제의 수준을 다르게 요청합니다. (세부 주제의 예시가 수준에 안 맞으면 같은 갈래의 다른 낱말로 바꾸게 합니다)
+const LIT_LEVEL = {
+  easy: '난이도: 쉬움 — 초등학교 3~4학년도 풀 수 있게 만들어. 일상에서 자주 쓰는 쉬운 낱말과 짧은 문장(q는 60자 이내)만 쓰고, 어려운 한자어·전문 용어는 피해. ' +
+    '세부 주제의 예시가 어려우면 같은 갈래에서 더 쉬운 낱말(예: 되/돼, 안/않, 맞히다/맞추다, 낫다/낳다, 가리키다/가르치다, 다르다/틀리다, 있다가/이따가)로 바꿔서 내. ' +
+    '오답은 정답과 뜻이 확연히 달라서, 차분히 읽으면 고를 수 있어야 해. why도 초등학생이 알아듣게 쉬운 말로 써.',
+  medium: '난이도: 보통 — 중학생이 풀 수 있는 수준으로 만들어. 학교생활과 일상에 나오는 낱말과 표현이 중심이야.',
+  hard: '난이도: 어려움 — 고등학생·성인도 헷갈릴 만한 수준으로 만들어. 뜻이 가까운 한자어, 문장 호응, 높임·피동 표현, 관용 표현·속담, 근거를 따져야 하는 읽기처럼 정확한 어휘력과 읽는 힘이 필요한 문제를 내. ' +
+    'q는 맥락이 있는 조금 긴 문장이어도 좋아. 오답은 그럴듯해서 깊이 생각해야 하지만, 정답은 표준국어대사전 기준으로 하나로 분명히 정해져야 해.',
+};
+async function generateLitItems(level, count, fromClient) {
+  level = cleanLevel(level);
   const known = [...history.lit, ...fromClient];
   const items = [];
   for (let attempt = 0; attempt < 2 && items.length < Math.ceil(count * 0.6); attempt++) {
@@ -324,12 +343,13 @@ async function generateLitItems(count, fromClient) {
     let out;
     try {
       out = await askJSON({
-        system: '너는 청소년 "문해력" 퀴즈 게임의 문제 출제자야. 중학생이 풀 수 있는 한국어 2지선다 문제를 만들어.\n' +
+        system: '너는 "문해력" 퀴즈 게임의 문제 출제자야. 한국어 2지선다 문제를 만들어.\n' +
+          '- ' + LIT_LEVEL[level] + '\n' +
           '- 번호마다 지정된 "분야 · 세부 주제"에 맞춰 문제를 정확히 하나씩, 번호 순서대로 만들어.\n' +
           '- q: 상황이나 문장을 주고 알맞은 말·표현을 묻는 문제(120자 이내). 어색한 말이 들어갈 자리는 문제 안에서 드러나게 쓰되 정답을 q에 그대로 쓰지 마.\n' +
           '- right: 표준국어대사전 기준으로 정답인 선택지. wrong: 헷갈리기 쉬운 오답 선택지. 둘 다 20자 이내이고 서로 달라야 해.\n' +
           '- 정답이 하나로 딱 정해지는 문제만 내. 사전마다 다르거나 논란이 있는 표기, 방언, 신조어는 빼.\n' +
-          '- why: 왜 right가 맞는지 두 낱말의 차이를 중학생 눈높이로 70자 이내 한두 문장으로 설명.\n' +
+          '- why: 왜 right가 맞는지 두 낱말의 차이를 난이도에 맞는 눈높이로 70자 이내 한두 문장으로 설명.\n' +
           '- 이미 나온 문제나 같은 낱말 쌍은 다시 쓰지 말고, 같은 주제여도 다른 낱말·다른 상황을 골라.',
         messages: [{ role: 'user', content: `문제 ${slots.length}개를 만들어 줘.\n${slots.map((s, i) => `${i + 1}. ${s.topic} · ${s.sub}`).join('\n')}\n\n이미 나온 문제(같은 내용이나 비슷한 말도 쓰지 마):\n${shown.length ? shown.map(t => '- ' + t).join('\n') : '(없음)'}` }],
         schema: LIT_SCHEMA,
@@ -351,38 +371,42 @@ async function generateLitItems(count, fromClient) {
   }
   return items;
 }
-const LIT_POOL_SIZE = 2, LIT_BATCH_COUNT = 10;
-const litPool = [];
-let litFilling = false, litFailUntil = 0;
-async function refillLitPool() {
-  if (litFilling || !isConfigured() || Date.now() < litFailUntil) return;
-  litFilling = true;
+// 난이도마다 창고가 따로 있습니다. 가장 많이 쓰는 "보통"만 넉넉히 쌓아 둡니다.
+const LIT_POOL_SIZE = { easy: 1, medium: 2, hard: 1 }, LIT_BATCH_COUNT = 10;
+const litPools = { easy: [], medium: [], hard: [] };
+const litState = { easy: { filling: false, failUntil: 0 }, medium: { filling: false, failUntil: 0 }, hard: { filling: false, failUntil: 0 } };
+async function refillLitPool(level) {
+  const pool = litPools[level], st = litState[level];
+  if (st.filling || !isConfigured() || Date.now() < st.failUntil) return;
+  st.filling = true;
   try {
-    while (litPool.length < LIT_POOL_SIZE) {
+    while (pool.length < LIT_POOL_SIZE[level]) {
       let items;
-      try { items = await generateLitItems(LIT_BATCH_COUNT, litPool.flat().map(i => i.q)); }
-      catch (e) { litFailUntil = Date.now() + 30000; console.warn('문해력 문제 미리 만들기 실패:', e.message); break; }
-      if (!items.length) { litFailUntil = Date.now() + 30000; break; }
-      litPool.push(items);
+      try { items = await generateLitItems(level, LIT_BATCH_COUNT, pool.flat().map(i => i.q)); }
+      catch (e) { st.failUntil = Date.now() + 30000; console.warn(`문해력(${level}) 문제 미리 만들기 실패:`, e.message); break; }
+      if (!items.length) { st.failUntil = Date.now() + 30000; break; }
+      pool.push(items);
     }
-  } finally { litFilling = false; }
+  } finally { st.filling = false; }
 }
-setTimeout(() => { refillLitPool(); }, 2500).unref();
-async function takeLitBatch(count, fromClient) {
+setTimeout(async () => { for (const lv of ['medium', 'easy', 'hard']) await refillLitPool(lv); }, 2500).unref();
+async function takeLitBatch(level, count, fromClient) {
   if (count === LIT_BATCH_COUNT) {
-    while (litPool.length) {
-      const items = litPool.shift().filter(i => !fromClient.some(k => similar(k, i.q)));
-      if (items.length >= Math.ceil(count * 0.6)) { refillLitPool(); return items; }
+    const pool = litPools[level];
+    while (pool.length) {
+      const items = pool.shift().filter(i => !fromClient.some(k => similar(k, i.q)));
+      if (items.length >= Math.ceil(count * 0.6)) { refillLitPool(level); return items; }
     }
-    refillLitPool();
+    refillLitPool(level);
   }
-  return generateLitItems(count, fromClient);
+  return generateLitItems(level, count, fromClient);
 }
 router.post('/literacy-questions', rateLimit, async (req, res) => {
   const count = Math.min(12, Math.max(3, Number(req.body?.count) || LIT_BATCH_COUNT));
+  const level = cleanLevel(req.body?.level);
   const fromClient = (Array.isArray(req.body?.avoid) ? req.body.avoid : []).slice(-40).map(t => String(t).slice(0, 160));
   try {
-    const items = await takeLitBatch(count, fromClient);
+    const items = await takeLitBatch(level, count, fromClient);
     if (!items.length) return res.status(502).json({ message: 'Claude가 새로운 문제를 만들지 못했어요.' });
     items.forEach(i => remember(history.lit, i.q, 200));
     res.json({ items });
@@ -417,40 +441,66 @@ function pickKeywordTopic() {
   return t;
 }
 // AI 출제가 안 될 때 쓰는 준비된 키워드 (최근에 나온 것은 피합니다)
-function pickFallbackKeyword() {
-  const fresh = KEYWORDS.filter(k => !isRecentWord(k.word));
-  const pool = fresh.length ? fresh : KEYWORDS;
+function pickFallbackKeyword(level = 'medium') {
+  const lv = KEYWORDS.filter(k => levelOfWord(k) === cleanLevel(level));
+  const fresh = lv.filter(k => !isRecentWord(k.word));
+  const pool = fresh.length ? fresh : lv.length ? lv : KEYWORDS;
   return pool[crypto.randomInt(pool.length)];
 }
 // 미리 만들어 둔 키워드 창고: 게임을 시작할 때 Claude를 기다리지 않고 바로 꺼내 쓰고, 부족해지면 뒤에서 다시 채웁니다.
-const KW_POOL_SIZE = 3;
-const kwPool = [];
-let kwFilling = false, kwFailUntil = 0;
-async function refillKeywordPool() {
-  if (kwFilling || !isConfigured() || Date.now() < kwFailUntil) return;
-  kwFilling = true;
+// 난이도마다 창고가 따로 있고, 가장 많이 쓰는 "보통"만 넉넉히 쌓아 둡니다.
+const KW_POOL_SIZE = { easy: 1, medium: 3, hard: 1 };
+const kwPools = { easy: [], medium: [], hard: [] };
+const kwState = { easy: { filling: false, failUntil: 0 }, medium: { filling: false, failUntil: 0 }, hard: { filling: false, failUntil: 0 } };
+async function refillKeywordPool(level) {
+  const pool = kwPools[level], st = kwState[level];
+  if (st.filling || !isConfigured() || Date.now() < st.failUntil) return;
+  st.filling = true;
   try {
-    while (kwPool.length < KW_POOL_SIZE) {
+    while (pool.length < KW_POOL_SIZE[level]) {
       let kw;
-      try { kw = await generateKeywordSlow(kwPool.map(k => k.word)); }
-      catch (e) { kwFailUntil = Date.now() + 30000; console.warn('키워드 미리 만들기 실패:', e.message); break; }
-      kwPool.push(kw);
+      try { kw = await generateKeywordSlow(level, LEVELS.flatMap(l => kwPools[l]).map(k => k.word)); }
+      catch (e) { st.failUntil = Date.now() + 30000; console.warn(`키워드(${level}) 미리 만들기 실패:`, e.message); break; }
+      pool.push(kw);
     }
-  } finally { kwFilling = false; }
+  } finally { st.filling = false; }
 }
-async function generateKeyword() {
-  while (kwPool.length) {
-    const kw = kwPool.shift();
-    if (!isRecentWord(kw.word)) { refillKeywordPool(); return kw; }
+async function generateKeyword(level = 'medium') {
+  level = cleanLevel(level);
+  const pool = kwPools[level];
+  while (pool.length) {
+    const kw = pool.shift();
+    if (!isRecentWord(kw.word)) { refillKeywordPool(level); return kw; }
   }
-  refillKeywordPool();
-  return generateKeywordSlow();
+  refillKeywordPool(level);
+  return generateKeywordSlow(level);
 }
-setTimeout(() => { refillKeywordPool(); }, 1000).unref(); // 서버를 켜면 미리 준비해 둡니다
-async function generateKeywordSlow(extraAvoid = []) {
+setTimeout(async () => { for (const lv of ['medium', 'easy', 'hard']) await refillKeywordPool(lv); }, 1000).unref(); // 서버를 켜면 미리 준비해 둡니다
+// 난이도별 출제 기준과 힌트(field) 스타일
+const KW_LEVEL = {
+  easy: {
+    rule: '- 난이도는 아주 쉽게: 초등학교 고학년(4~6학년)도 듣자마자 뜻을 아는, 뉴스·학교·스마트폰에서 자주 들어 본 낱말이어야 해. (좋은 예: 딥페이크, 챗봇, 얼굴 인식, 음성 합성, 자율주행차, 가짜 영상, 추천 영상, 스마트 스피커) ' +
+      '2~5글자 한국어 낱말. 한자어 개념어, 추상적인 낱말, 영어 약어, 전문 용어는 고르지 마.\n',
+    field: '- field: 플레이어에게 보여 줄 아주 친절하고 구체적인 힌트(15자 이내, 예: "가짜 영상·사진과 관련"). 키워드 자체나 그 일부는 쓰지 마.\n',
+    note: '쉬운 낱말이어도 괜찮지만, 최근에 나온 것과는 달라야 해.',
+  },
+  medium: {
+    rule: '- 난이도는 보통: 중학교 1학년이 듣자마자 뜻을 아는, 일상에서 자주 쓰는 낱말이어야 해. (좋은 예: 딥페이크, 알고리즘 편향, 환각, 학습 데이터, 생성형 AI, 얼굴 인식, 음성 합성, 필터 버블) ' +
+      '2~5글자 한국어 낱말. 전문 용어, 추상적인 개념어(예: 책임성, 설명 가능성, 디지털 시민성), 영어 약어는 고르지 마.\n',
+    field: '- field: 플레이어에게 보여 줄 친절하고 구체적인 힌트(15자 이내, 예: "인터넷 글과 관련", "사진·영상과 관련"). 키워드 자체나 그 일부는 쓰지 마.\n',
+    note: '개인정보, 딥페이크, 가짜 뉴스처럼 너무 뻔한 낱말은 피하고, 세부 주제에 어울리는 다른 낱말을 골라.',
+  },
+  hard: {
+    rule: '- 난이도는 어렵게: AI 윤리를 배운 중·고등학생도 깊이 생각해야 떠올릴 수 있는 개념어여야 해. (좋은 예: 설명 가능한 AI, 데이터 라벨링, 블랙박스 AI, 연합 학습, 적대적 공격, 모델 붕괴, 레드팀, 프라이버시 보호 기술, 알고리즘 감사) ' +
+      '2~8글자 한국어 낱말이나 짧은 합성어. 영어 약어만 있는 낱말은 고르지 마. 딥페이크, 환각, 생성형 AI, 필터 버블 같은 너무 뻔한 낱말도 피해.\n',
+    field: '- field: 분야만 알려 주는 짧은 힌트(15자 이내, 예: "AI 투명성", "개인정보 보호 기술"). 키워드 자체나 그 일부는 쓰지 마.\n',
+    note: '세부 주제와 이어지는 전문적인 개념어를 골라.',
+  },
+};
+async function generateKeywordSlow(level = 'medium', extraAvoid = []) {
   let lastDup = '';
   for (let attempt = 0; attempt < 3; attempt++) {
-    const kw = await generateKeywordOnce(lastDup, extraAvoid);
+    const kw = await generateKeywordOnce(level, lastDup, extraAvoid);
     if (!kw) continue;
     if (isRecentWord(kw.word) || extraAvoid.some(w => norm(w) === norm(kw.word))) { lastDup = kw.word; continue; } // 최근에 나온 낱말이면 다시 뽑습니다
     if (!(await isAiEthicsWord(kw))) { lastDup = kw.word; console.warn('AI 윤리와 무관해서 버린 키워드:', kw.word); continue; } // 한 번 더 검수
@@ -473,17 +523,17 @@ async function isAiEthicsWord(kw) {
     return out.aiEthics === true;
   } catch { return false; }
 }
-async function generateKeywordOnce(justDuplicated, extraAvoid = []) {
+async function generateKeywordOnce(level, justDuplicated, extraAvoid = []) {
   const { theme, sub } = pickKeywordTopic();
+  const lv = KW_LEVEL[cleanLevel(level)];
   const out = await askJSON({
-    system: '너는 중학생을 위한 "AI 윤리 스무고개"의 출제자야. 쉽게 맞힐 수 있는 비밀 키워드 하나를 골라.\n' +
-      '- 난이도는 쉽게: 중학교 1학년이 듣자마자 뜻을 아는, 일상에서 자주 쓰는 낱말이어야 해. (좋은 예: 딥페이크, 알고리즘 편향, 환각, 학습 데이터, 생성형 AI, 얼굴 인식, 음성 합성, 필터 버블)\n' +
-      '- 2~5글자 한국어 낱말. 전문 용어, 추상적인 개념어(예: 책임성, 설명 가능성, 디지털 시민성), 영어 약어는 고르지 마.\n' +
+    system: '너는 "AI 윤리 스무고개"의 출제자야. 비밀 키워드 하나를 골라.\n' +
+      lv.rule +
       '- 반드시 AI 윤리(AI 편향, 딥페이크·합성, AI 환각, 학습 데이터, 생성형 AI, 얼굴 인식, 추천 알고리즘, AI의 책임·투명성 등)와 바로 이어지는 AI 기술·개념 낱말로만 골라. 낱말 자체가 AI·알고리즘·데이터·합성·생성 같은 AI 개념이어야 해. AI 없이도 쓰는 일반 낱말(차별, 표절, 출처, 저작권, 개인정보, 가짜 뉴스, 팩트체크, 해킹, 악플, 와이파이 등), 건강, 과학, 일반 상식, 단순한 기계·기기 이름은 절대 고르지 마.\n' +
       '- aliases: 정답으로 인정할 다른 표현·띄어쓰기를 바꾼 형태·영어 표기·비슷한 말 3~6개. 넉넉하게 넣어.\n' +
-      '- field: 플레이어에게 보여 줄 친절하고 구체적인 힌트(15자 이내, 예: "인터넷 글과 관련", "사진·영상과 관련"). 키워드 자체나 그 일부는 쓰지 마.\n' +
-      '- desc: 게임이 끝나고 보여 줄 설명. 뜻과 왜 윤리적으로 중요한지 중학생 눈높이로 두 문장(90자 이내).',
-    messages: [{ role: 'user', content: `이번 판의 분야: ${theme}\n이번 판의 세부 주제: ${sub} (이 주제와 바로 이어지는 낱말을 골라)\n개인정보, 딥페이크, 가짜 뉴스처럼 너무 뻔한 낱말은 피하고, 세부 주제에 어울리는 다른 낱말을 골라.\n최근에 나온 키워드(이번엔 반드시 다른 것으로): ${[...recentWords.slice(-50), ...extraAvoid].join(', ') || '(없음)'}${justDuplicated ? `\n방금 "${justDuplicated}"를 골랐는데 최근에 나온 낱말이야. 다른 낱말로 골라.` : ''}` }],
+      lv.field +
+      '- desc: 게임이 끝나고 보여 줄 설명. 뜻과 왜 윤리적으로 중요한지 ' + (level === 'easy' ? '초등학생도 알아듣게 쉬운 말로' : '중학생 눈높이로') + ' 두 문장(90자 이내).',
+    messages: [{ role: 'user', content: `이번 판의 분야: ${theme}\n이번 판의 세부 주제: ${sub} (이 주제와 바로 이어지는 낱말을 골라)\n${lv.note}\n최근에 나온 키워드(이번엔 반드시 다른 것으로): ${[...recentWords.slice(-50), ...extraAvoid].join(', ') || '(없음)'}${justDuplicated ? `\n방금 "${justDuplicated}"를 골랐는데 최근에 나온 낱말이야. 다른 낱말로 골라.` : ''}` }],
     schema: {
       type: 'object',
       properties: { word: { type: 'string' }, aliases: { type: 'array', items: { type: 'string' } }, field: { type: 'string' }, desc: { type: 'string' } },
@@ -586,16 +636,17 @@ async function playTurn(s, who, kind, text) {
 router.post('/twenty/start', rateLimit, async (req, res) => {
   if (!isConfigured()) return res.status(503).json({ message: '서버의 .env 파일에 ANTHROPIC_API_KEY를 넣어 주세요.', code: 'no_key' });
   const mode = req.body?.mode === 'ai' ? 'ai' : 'single';
+  const level = cleanLevel(req.body?.level);
   let kw, generated = true;
-  try { kw = await generateKeyword(); }
+  try { kw = await generateKeyword(level); }
   catch (e) {
     if (e instanceof ClaudeError && ['no_key', 'bad_key'].includes(e.code)) return sendError(res, e);
     console.error('키워드 생성 실패, 준비된 목록 사용:', e.message);
-    kw = pickFallbackKeyword(); generated = false;
+    kw = pickFallbackKeyword(level); generated = false;
   }
   rememberWord(kw.word);
   const s = {
-    id: crypto.randomUUID(), mode, kw, generated,
+    id: crypto.randomUUID(), mode, level, kw, generated,
     log: [], turnsLeft: { ...TURNS[mode] }, next: 'me', finished: false, winner: null, busy: false, createdAt: Date.now(),
   };
   if (sessions.size > 500) sessions.delete(sessions.keys().next().value);
