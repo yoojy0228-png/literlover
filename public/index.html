@@ -822,6 +822,29 @@ input,select,textarea{font-size:max(16px,1.05rem)!important}
   .twenty-main{height:auto}
   .tw-log{min-height:55dvh}
 }
+
+/* 오답 노트 모바일 최적화: 폭이 좁거나 터치 기기(가로 모드 포함)에서는 고정 배치를 풀고 위에서 아래로 한 줄씩 보여 줌 */
+@media (max-width:860px), (hover:none) and (pointer:coarse){
+  #result.screen.setup.active{overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:.5rem .6rem max(1rem,env(safe-area-inset-bottom))}
+  #result.screen.setup.active .setup-card{width:100%;height:auto;max-height:none;min-height:auto}
+  #result.screen.setup.active .panel{flex:none;display:block;min-height:0}
+  #result .setup-head{padding-top:0}
+  #result #resultClosing{position:static;display:block;max-width:100%!important;margin:.4rem 0 0!important;padding:.5rem .8rem!important;font-size:1.05rem!important;text-align:center;word-break:keep-all}
+  #result .result.score-only{position:static;display:flex;justify-content:space-between;align-items:center;padding:.6rem 1rem!important;box-shadow:0 3px 0 var(--ink)}
+  #result .result.score-only span{font-size:1.1rem}
+  #result .result.score-only strong{font-size:1.9rem}
+  #result .section-title{font-size:1.25rem;margin:.9rem 0 .5rem}
+  #result .review-list{display:grid;grid-template-columns:minmax(0,1fr);gap:.6rem;flex:none;max-height:none;overflow:visible}
+  #result .review{min-width:0;width:100%;overflow:visible;padding:.7rem .85rem;border-left-width:5px;box-sizing:border-box}
+  #result .review h3{margin:0 0 .45rem;font-size:1.02rem;line-height:1.5;word-break:keep-all;overflow-wrap:anywhere}
+  #result .review p{margin:.25rem 0;padding:.35rem .55rem;border-radius:8px;font-size:.93rem;line-height:1.5;word-break:keep-all;overflow-wrap:anywhere}
+  #result .review p.wrong{background:var(--rose-l,rgba(201,67,92,.1))}
+  #result .review p.correct{background:var(--green-l)}
+  #result .review p.explain{padding:.2rem .1rem;color:var(--ink)}
+  #result .empty{padding:1rem;font-size:1rem}
+  #result .actions{display:flex;gap:.5rem;margin-top:1rem}
+  #result .actions button{flex:1 1 0;min-width:0;min-height:3rem;font-size:1rem;padding:.5rem .6rem}
+}
 </style>
 </head>
 <body data-screen="home">
