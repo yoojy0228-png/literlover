@@ -684,6 +684,31 @@ footer{padding:.5rem 0 .7rem}
   .hero-desc{font-size:.92rem}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
+/* 글씨를 키워서 화면이 넘칠 때: 글씨는 그대로 두고 여백과 최소 높이부터 줄입니다. (autoFit이 html.tight를 켭니다) */
+html.tight .app{padding-top:.3rem}
+html.tight header{min-height:2.4rem;padding-bottom:.15rem}
+html.tight footer{padding:.15rem 0 .25rem;font-size:.8rem}
+html.tight .screen.setup.active{padding-top:.2rem;padding-bottom:.2rem}
+html.tight .setup-head{margin-bottom:.35rem}
+html.tight .setup-head h1{margin:0 0 .1rem}
+html.tight .choice,html.tight .ai-stepper{min-height:0}
+html.tight .choice{padding:.45rem .5rem;gap:.1rem}
+html.tight .choice .ch-ic{font-size:1.9rem}
+html.tight .ai-stepper{padding:.4rem 1rem}
+html.tight .ai-faces{line-height:1.2}
+html.tight .step-btn{width:2.6rem;height:2.6rem;font-size:1.5rem}
+html.tight #modeSelectionStatus{margin:.35rem 0 0}
+html.tight #levelLabel{margin-top:.5rem}
+html.tight #levelDesc{margin:.35rem 0 0}
+html.tight .actions{margin-top:.6rem}
+html.tight #home.active{gap:.3rem;padding-bottom:.3rem}
+html.tight .home-logo img{max-height:clamp(70px,20dvh,440px)}
+html.tight .hero-desc{font-size:1.15rem;line-height:1.3}
+html.tight .topic-card .ic{height:clamp(2.6rem,7vh,8rem)}
+html.tight .tc-body{padding:.3rem .8rem .1rem}
+html.tight .topic-card .go{margin:.3rem 1rem .4rem}
+html.tight .screen-head{gap:.2rem .8rem}
+html.tight .stats .stat{padding-top:.2rem;padding-bottom:.2rem}
 /* 전체 글씨를 얇게 */
 body,body *{font-weight:200!important}
 b,strong,h1,h2,h3{font-weight:300!important}
@@ -1402,6 +1427,7 @@ function show(id) {
   document.body.dataset.screen = id; // 화면별 헤더·푸터 표시를 CSS에서 조절
   window.scrollTo(0, 0);
   $(id).scrollTop = 0; // 화면마다 따로 스크롤되므로 새로 열 때 맨 위부터
+  if (window.scheduleFit) scheduleFit();
 }
 
 const AI_LEVEL = { easy: { aiDelay: 4300, aiChance: .45 }, medium: { aiDelay: 2600, aiChance: .70 }, hard: { aiDelay: 1200, aiChance: .90 } };
@@ -1433,7 +1459,45 @@ function setFontScale(v) {
   document.documentElement.style.setProperty("--fs", fontScale);
   $("fontSizeValue").textContent = Math.round(fontScale * 100) + "%";
   fitQuestionLayout();
+  scheduleFit();
 }
+/* 글씨를 키우거나 화면이 작아도 스크롤 없이 한 화면에 들어오도록, 넘칠 때만 글씨를 필요한 만큼 줄여 맞춥니다.
+   (휴대폰 폭은 원래 세로로 스크롤하는 화면이라 건드리지 않아요.) */
+let fitFrame = 0, fitEffective = 1;
+function screenOverflows() {
+  const a = document.querySelector(".screen.active");
+  if (!a) return false;
+  if (a.scrollHeight > a.clientHeight) return true;
+  // 화면 안의 카드·목록이 자기 안에서 스크롤되거나 내용이 잘리는 경우도 넘친 것으로 봅니다.
+  return [...a.querySelectorAll(".setup-card,.setup-card .panel,.review-list,.territory-layout,.twenty-layout,.twenty-main")]
+    .some(el => el.scrollHeight > el.clientHeight);
+}
+function autoFit() {
+  fitFrame = 0;
+  const root = document.documentElement;
+  const apply = v => { root.style.setProperty("--fs", v); fitQuestionLayout(); };
+  let eff = fontScale;
+  root.classList.remove("tight");
+  apply(eff);
+  if (!window.matchMedia("(max-width:860px)").matches && screenOverflows()) {
+    root.classList.add("tight"); // 1단계: 여백·최소 높이를 줄여 봅니다
+    apply(eff);
+  }
+  if (!window.matchMedia("(max-width:860px)").matches && screenOverflows()) {
+    let lo = .5, hi = fontScale; // 2단계: hi는 넘치고 lo는 들어간다고 보고 글씨를 이분 탐색으로 줄입니다
+    for (let i = 0; i < 7; i++) { const mid = (lo + hi) / 2; apply(mid); if (screenOverflows()) hi = mid; else lo = mid; }
+    eff = Math.floor(lo * 100) / 100;
+    apply(eff);
+    for (let i = 0; i < 12 && eff > .5 && screenOverflows(); i++) { eff = Math.round((eff - .01) * 100) / 100; apply(eff); } // 게임 화면처럼 높이가 글씨에 비례하지 않는 곳의 1px 남음 방지
+  }
+  fitEffective = eff;
+  const shown = Math.round(fontScale * 100) + "%";
+  $("fontSizeValue").textContent = eff < fontScale - .005 ? `${shown} → 화면에 맞춰 ${Math.round(eff * 100)}%` : shown;
+}
+function scheduleFit() { if (!fitFrame) fitFrame = requestAnimationFrame(autoFit); }
+window.scheduleFit = scheduleFit;
+window.addEventListener("resize", scheduleFit);
+new MutationObserver(scheduleFit).observe(document.querySelector(".app"), { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["hidden", "class"] });
 $("fontSmaller").addEventListener("click", () => setFontScale(fontScale - .1));
 $("fontLarger").addEventListener("click", () => setFontScale(fontScale + .1));
 $("fontReset").addEventListener("click", () => setFontScale(1));
@@ -1626,14 +1690,14 @@ function fitQuestionLayout() {
   const area = document.querySelector(".question-area"), lanes = document.querySelector(".lanes"), arena = $("arena");
   if (!area || !lanes || !arena || !$("game").classList.contains("active")) return;
   const mobile = window.matchMedia("(max-width:600px), (max-height:500px)").matches;
-  const top = Math.max(mobile ? 120 : 190, Math.ceil(area.offsetTop + area.offsetHeight + (mobile ? 8 : 12)));
+  const top = Math.max(120, Math.ceil(area.offsetTop + area.offsetHeight + (mobile ? 8 : 12)));
   lanes.style.top = top + "px";
   // 게임 화면이 창 높이를 꽉 채우도록, 아래 조작 영역을 뺀 남은 높이를 산성비 영역에 줍니다.
   // 휴대폰 주소창이 나타나고 사라지는 높이까지 반영하도록 visualViewport를 우선 사용합니다.
   const foot = document.querySelector("#game .game-foot");
   const vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
   const room = vh - arena.getBoundingClientRect().top - (foot ? foot.offsetHeight : 90) - (mobile ? 18 : 34);
-  arena.style.height = Math.max(top + (mobile ? 190 : 250), mobile ? 300 : 420, Math.floor(room)) + "px";
+  arena.style.height = Math.max(top + (mobile ? 190 : 170), mobile ? 300 : 280, Math.floor(room)) + "px";
 }
 window.addEventListener("resize", fitQuestionLayout);
 window.addEventListener("orientationchange", () => setTimeout(fitQuestionLayout, 250));
