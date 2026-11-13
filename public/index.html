@@ -2843,7 +2843,7 @@ $("twentyHome").addEventListener("click", () => { tw.gen++; hideGenerating(true)
     try {
       const d = await api('/api/records'), s = d.stats || {}, rows = $('recordsRows');
       const sum = $('recordsSummary'); sum.replaceChildren();
-      [['게임', s.games], ['승', s.wins], ['패', s.losses], ['무', s.draws], ['최고 점수', s.bestScore]].forEach(([k, v]) => {
+      [['게임', s.games]].forEach(([k, v]) => {
         const m = document.createElement('div'); m.className = 'records-metric';
         const a = document.createElement('span'); a.textContent = k;
         const b = document.createElement('strong'); b.textContent = v || 0;
@@ -2852,7 +2852,9 @@ $("twentyHome").addEventListener("click", () => { tw.gen++; hideGenerating(true)
       rows.replaceChildren();
       (d.records || []).forEach(r => {
         const tr = document.createElement('tr');
-        [r.date, r.modeLabel || r.mode, r.topic, r.resultLabel || RESULT[r.result] || r.result, r.score].forEach(v => { const td = document.createElement('td'); td.textContent = v ?? ''; tr.append(td); });
+        const isDots = r.mode === 'dots';
+        const resText = isDots ? (r.oppScore !== undefined ? `${r.score} : ${r.oppScore}` : '') : (r.topic === '문해력' ? '' : (r.resultLabel || RESULT[r.result] || r.result));
+        [r.date, r.modeLabel || r.mode, r.topic, resText, isDots ? '' : r.score].forEach(v => { const td = document.createElement('td'); td.textContent = v ?? ''; tr.append(td); });
         rows.append(tr);
       });
       $('recordsEmpty').hidden = !!(d.records && d.records.length);
