@@ -77,7 +77,7 @@ const rooms = new Map();
 function recordOnlineResult(r, scores, mode){
   if(!r||r.recorded)return;r.recorded=true;
   const max=Math.max(...scores), winners=scores.map((v,i)=>v===max?i:-1).filter(i=>i>=0);
-  r.players.forEach((p,i)=>{const u=db.users[p.userKey];if(!u)return;const outcome=winners.length>1?'draw':(winners[0]===i?'win':'loss');addRecord(u,{mode,modeLabel:mode==='dots'?'온라인 도트 앤 박스':mode==='twenty'?'온라인 스무고개':'온라인 퀴즈',topic:r.topic||'가짜 판별',score:scores[i],oppScore:scores[1-i],opponent:r.players[1-i]?.name||'',result:outcome,resultLabel:outcome==='win'?'승리':outcome==='loss'?'패배':'무승부'});});
+  r.players.forEach((p,i)=>{const u=db.users[p.userKey];if(!u)return;const outcome=winners.length>1?'draw':(winners[0]===i?'win':'loss');addRecord(u,{mode,modeLabel:mode==='dots'?'온라인 도트 앤 박스':mode==='twenty'?'온라인 스무고개':'온라인 퀴즈',topic:r.topic||'가짜 판별',score:scores[i],opponent:r.players[1-i]?.name||'',result:outcome,resultLabel:outcome==='win'?'승리':outcome==='loss'?'패배':'무승부'});});
 }
 function code(){ let s=''; do { s=String(Math.floor(100000+Math.random()*900000)); } while(rooms.has(s)); return s; }
 function publicRoom(r){ return {code:r.code, players:r.players.map(p=>({id:p.id, name:p.name, score:p.score})), started:r.started, topic:r.topic, mode:r.mode}; }
