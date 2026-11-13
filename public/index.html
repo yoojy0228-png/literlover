@@ -2728,17 +2728,142 @@ $("twentyHome").addEventListener("click", () => { tw.gen++; hideGenerating(true)
   </section>
 </div>
 
+<style>
+#authModal{position:fixed;inset:0;z-index:10030;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(75,46,28,.55);color:var(--ink)}
+.auth-card{width:min(400px,100%);padding:clamp(18px,3vw,28px);background:var(--paper);border:var(--bw) solid var(--ink);border-radius:var(--r-lg);box-shadow:0 8px 0 var(--ink)}
+.auth-card h2{margin:0 0 4px}
+.auth-card .auth-sub{margin:0 0 14px;font-size:.9rem;color:var(--sub)}
+.auth-tabs{display:flex;gap:6px;margin-bottom:14px}
+.auth-tabs button{flex:1;padding:9px;background:var(--card);border:2px solid var(--line);border-radius:var(--r-sm)}
+.auth-tabs button[aria-selected="true"]{background:var(--gold-l);border-color:var(--ink);font-weight:700}
+.auth-card label{display:block;margin:0 0 10px;font-size:.88rem;color:var(--sub)}
+.auth-card input{display:block;width:100%;margin-top:4px;padding:10px;font:inherit;color:var(--ink);background:var(--card);border:2px solid var(--line-2);border-radius:var(--r-sm)}
+.auth-card input:focus{outline:none;border-color:var(--rose)}
+#authError{min-height:1.2em;margin:0 0 10px;font-size:.88rem;color:var(--rose-d)}
+.auth-actions{display:flex;gap:8px}
+.auth-actions button{flex:1;padding:11px;border:var(--bw) solid var(--ink);border-radius:var(--r-sm);background:var(--card)}
+.auth-actions button.primary{background:var(--rose);color:#fff;box-shadow:0 3px 0 var(--ink)}
+.auth-actions button:disabled{opacity:.6;cursor:default}
+#accountBtn,#recordsBtn,#logoutBtn{padding:.45rem .8rem;background:var(--card);border:2px solid var(--ink);border-radius:99px;white-space:nowrap}
+#accountBtn.in{background:var(--gold-l)}
+.top-actions{flex-wrap:wrap;justify-content:flex-end}
+</style>
+<div id="authModal" hidden role="dialog" aria-modal="true" aria-labelledby="authTitle">
+  <form class="auth-card" id="authForm" autocomplete="on">
+    <h2 id="authTitle">로그인</h2>
+    <p class="auth-sub">로그인하면 게임 전적이 저장돼요. 안 해도 게스트로 플레이할 수 있어요.</p>
+    <div class="auth-tabs" role="tablist">
+      <button type="button" role="tab" id="tabLogin" aria-selected="true">로그인</button>
+      <button type="button" role="tab" id="tabRegister" aria-selected="false">회원가입</button>
+    </div>
+    <label>아이디<input id="authUser" name="username" autocomplete="username" maxlength="18" required></label>
+    <label>비밀번호<input id="authPass" name="password" type="password" autocomplete="current-password" minlength="6" maxlength="128" required></label>
+    <p id="authError" role="alert"></p>
+    <div class="auth-actions">
+      <button type="button" id="authCancel">닫기</button>
+      <button type="submit" id="authSubmit" class="primary">로그인</button>
+    </div>
+  </form>
+</div>
+
 <script>
-/* 로그인/회원가입 제거: 게임을 바로 시작하는 게스트 모드 */
+/* 선택형 로그인: 로그인하면 전적이 저장되고, 안 해도 게스트로 바로 플레이할 수 있습니다. */
 (() => {
   document.body.classList.add('authenticated');
-  const gate = document.getElementById('authGate');
-  if (gate) gate.remove();
-  const account = document.getElementById('accountWidget');
-  if (account) account.remove();
-  const token = localStorage.getItem('literlover-token');
-  // 이전 로그인 정보는 사용하지 않습니다.
-  if (token) localStorage.removeItem('literlover-token');
+  const TOKEN_KEY = 'literlover-token', NAME_KEY = 'literlover-username';
+  const $ = id => document.getElementById(id);
+  const store = {
+    get(k){ try { return localStorage.getItem(k) || ''; } catch { return ''; } },
+    set(k,v){ try { localStorage.setItem(k,v); } catch {} },
+    del(k){ try { localStorage.removeItem(k); } catch {} }
+  };
+  const actions = document.querySelector('.top-actions');
+  const mk = (id, text) => { const b = document.createElement('button'); b.type = 'button'; b.id = id; b.textContent = text; return b; };
+  const accountBtn = mk('accountBtn', '👤 로그인'), recordsBtn = mk('recordsBtn', '📊 내 전적'), logoutBtn = mk('logoutBtn', '로그아웃');
+  recordsBtn.hidden = logoutBtn.hidden = true;
+  actions.prepend(accountBtn, recordsBtn, logoutBtn);
+
+  function render() {
+    const name = store.get(NAME_KEY), on = !!(store.get(TOKEN_KEY) && name);
+    accountBtn.textContent = on ? '👤 ' + name : '👤 로그인';
+    accountBtn.classList.toggle('in', on);
+    accountBtn.disabled = on;
+    recordsBtn.hidden = logoutBtn.hidden = !on;
+  }
+  function clearSession() { store.del(TOKEN_KEY); store.del(NAME_KEY); render(); }
+  async function api(path, opts = {}) {
+    const token = store.get(TOKEN_KEY);
+    const res = await fetch(path, { ...opts, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) } });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { const e = new Error(data.message || '요청에 실패했어요.'); e.status = res.status; throw e; }
+    return data;
+  }
+
+  // 저장된 토큰이 아직 유효한지 확인합니다. 만료됐을 때만 지우고, 네트워크 오류는 그대로 둡니다.
+  if (store.get(TOKEN_KEY)) {
+    render();
+    api('/api/me').then(d => { store.set(NAME_KEY, d.user.username); render(); }).catch(e => { if (e.status === 401) clearSession(); });
+  } else { store.del(NAME_KEY); render(); }
+
+  // 로그인 / 회원가입 모달
+  const modal = $('authModal'), form = $('authForm'), err = $('authError'), submit = $('authSubmit');
+  let mode = 'login', opener = null;
+  function setMode(m) {
+    mode = m;
+    $('tabLogin').setAttribute('aria-selected', m === 'login');
+    $('tabRegister').setAttribute('aria-selected', m === 'register');
+    $('authTitle').textContent = m === 'login' ? '로그인' : '회원가입';
+    submit.textContent = m === 'login' ? '로그인' : '가입하고 시작';
+    $('authPass').autocomplete = m === 'login' ? 'current-password' : 'new-password';
+    err.textContent = '';
+  }
+  function openModal() { opener = document.activeElement; setMode('login'); form.reset(); modal.hidden = false; $('authUser').focus(); }
+  function closeModal() { modal.hidden = true; if (opener && opener.focus) opener.focus(); }
+  accountBtn.addEventListener('click', openModal);
+  $('authCancel').addEventListener('click', closeModal);
+  modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+  $('tabLogin').addEventListener('click', () => setMode('login'));
+  $('tabRegister').addEventListener('click', () => setMode('register'));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.hidden) closeModal(); });
+  form.addEventListener('submit', async e => {
+    e.preventDefault(); err.textContent = ''; submit.disabled = true;
+    try {
+      const d = await api(mode === 'login' ? '/api/login' : '/api/register', { method: 'POST', body: JSON.stringify({ username: $('authUser').value.trim(), password: $('authPass').value }) });
+      store.set(TOKEN_KEY, d.token); store.set(NAME_KEY, d.user.username); render(); closeModal();
+    } catch (ex) { err.textContent = ex.message; }
+    finally { submit.disabled = false; $('authPass').value = ''; }
+  });
+  logoutBtn.addEventListener('click', () => { api('/api/logout', { method: 'POST' }).catch(() => {}); clearSession(); });
+
+  // 내 전적 모달 (기존 #recordsModal 사용)
+  const rec = $('recordsModal');
+  const RESULT = { win: '승리', loss: '패배', draw: '무승부', played: '완료' };
+  async function openRecords() {
+    rec.hidden = false; $('recordsError').textContent = '';
+    try {
+      const d = await api('/api/records'), s = d.stats || {}, rows = $('recordsRows');
+      const sum = $('recordsSummary'); sum.replaceChildren();
+      [['게임', s.games], ['승', s.wins], ['패', s.losses], ['무', s.draws], ['최고 점수', s.bestScore]].forEach(([k, v]) => {
+        const m = document.createElement('div'); m.className = 'records-metric';
+        const a = document.createElement('span'); a.textContent = k;
+        const b = document.createElement('strong'); b.textContent = v || 0;
+        m.append(a, b); sum.append(m);
+      });
+      rows.replaceChildren();
+      (d.records || []).forEach(r => {
+        const tr = document.createElement('tr');
+        [r.date, r.modeLabel || r.mode, r.topic, r.resultLabel || RESULT[r.result] || r.result, r.score].forEach(v => { const td = document.createElement('td'); td.textContent = v ?? ''; tr.append(td); });
+        rows.append(tr);
+      });
+      $('recordsEmpty').hidden = !!(d.records && d.records.length);
+    } catch (ex) {
+      if (ex.status === 401) { rec.hidden = true; clearSession(); openModal(); $('authError').textContent = ex.message; }
+      else $('recordsError').textContent = ex.message;
+    }
+  }
+  recordsBtn.addEventListener('click', openRecords);
+  $('closeRecords').addEventListener('click', () => { rec.hidden = true; });
+  rec.addEventListener('click', e => { if (e.target === rec) rec.hidden = true; });
 })();
 </script>
 
