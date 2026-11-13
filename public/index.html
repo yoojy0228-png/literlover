@@ -1041,6 +1041,7 @@ input,select,textarea{font-size:max(16px,1.05rem)!important}
       </div>
       <p class="muted" id="bestScore"></p>
       <p class="muted" id="battleResult"></p>
+      <p class="correct" id="copyDone" hidden>🎉 오답 따라 쓰기를 모두 마쳤어요!</p>
       <h2 class="section-title">📝 오답 노트</h2>
       <div id="reviews" class="review-list"></div>
       <div class="actions"><button class="secondary" id="homeBtn">메인 화면</button><button class="primary" id="retry">↻ 다시 하기</button></div>
@@ -1810,7 +1811,7 @@ function endGame(title, message) {
   const norm = s => String(s).replace(/\s+/g, "").toLowerCase();
   const navBtns = [$("homeBtn"), $("retry")];
   navBtns.forEach(b => b.disabled = game.wrong.length > 0);
-  const doneMsg = Object.assign(document.createElement("p"), { className: "correct", textContent: "🎉 오답 따라 쓰기를 모두 마쳤어요!" });
+  const doneMsg = $("copyDone"); doneMsg.hidden = true;
   if (!game.wrong.length) { const el = document.createElement("div"); el.className = "empty"; el.textContent = "오답이 없습니다! 훌륭합니다."; list.append(el); }
   else game.wrong.forEach((w, i) => {
     const card = document.createElement("article"); card.className = "review";
@@ -1829,11 +1830,14 @@ function endGame(title, message) {
       if (done) doneMsg.hidden = false; else doneMsg.hidden = true;
     });
     inp.className = "copy-in";
+    // 복사/붙여넣기/드래그 앤 드롭 차단
+    ["paste", "drop", "copy", "cut", "contextmenu"].forEach(ev => inp.addEventListener(ev, e => e.preventDefault()));
+    inp.addEventListener("beforeinput", e => { if (e.inputType === "insertFromPaste" || e.inputType === "insertFromDrop") e.preventDefault(); });
+    inp.addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && ["v", "c", "x"].includes(e.key.toLowerCase())) e.preventDefault(); });
     card.append(inp, msg);
     list.append(card);
   });
   if (game.wrong.length) {
-    doneMsg.hidden = true; list.append(doneMsg);
     const first = list.querySelector(".copy-in"); if (first) setTimeout(() => first.focus(), 0);
   }
   show("result");
