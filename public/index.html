@@ -1815,6 +1815,37 @@ function endGame(title, message) {
     card.append(h, mk("wrong", "내 선택: " + w.chosen), mk("correct", "정답: " + w.correct), mk("explain", "해설: " + w.explain));
     list.append(card);
   });
+  // 틀린 문제 전부를 정답을 보며 따라 쓰기. 맞게 써야 다음 문제로, 모두 끝나야 나갈 수 있음
+  const navBtns = [$("homeBtn"), $("retry")];
+  navBtns.forEach(b => b.disabled = game.wrong.length > 0);
+  if (game.wrong.length) {
+    const norm = s => String(s).replace(/\s+/g, "").toLowerCase();
+    const box = document.createElement("section"); box.className = "review copy-practice";
+    list.append(box);
+    let idx = 0;
+    const render = () => {
+      const w = game.wrong[idx]; box.replaceChildren();
+      const t = document.createElement("h3"); t.textContent = `✍️ 정답 따라 쓰기 (${idx + 1}/${game.wrong.length})`;
+      const qd = document.createElement("p"); qd.className = "explain"; qd.textContent = w.q;
+      const ans = document.createElement("p"); ans.className = "correct"; ans.style.cssText = "font-size:1.25rem;font-weight:800"; ans.textContent = w.correct;
+      const inp = document.createElement("input"); inp.type = "text"; inp.placeholder = "위의 정답을 그대로 따라 써 보세요"; inp.autocomplete = "off"; inp.style.cssText = "width:100%;padding:.6rem .8rem;font-size:1.05rem;margin-top:.4rem;box-sizing:border-box";
+      const msg = document.createElement("p"); msg.className = "muted"; msg.setAttribute("aria-live", "polite");
+      const next = document.createElement("button"); next.className = "primary"; next.disabled = true;
+      next.textContent = idx + 1 < game.wrong.length ? "다음 ▶" : "완료 ✔";
+      inp.addEventListener("input", () => {
+        const ok = norm(inp.value) === norm(w.correct);
+        next.disabled = !ok; msg.textContent = ok ? "✅ 잘 따라 썼어요!" : "";
+      });
+      inp.addEventListener("keydown", e => { if (e.key === "Enter" && !next.disabled) next.click(); });
+      next.addEventListener("click", () => {
+        if (idx + 1 < game.wrong.length) { idx++; render(); }
+        else { box.replaceChildren(Object.assign(document.createElement("p"), { className: "correct", textContent: "🎉 오답 따라 쓰기를 모두 마쳤어요!" })); navBtns.forEach(b => b.disabled = false); }
+      });
+      box.append(t, qd, ans, inp, msg, next);
+      inp.focus();
+    };
+    render();
+  }
   show("result");
 }
 buttons.forEach((b, i) => b.addEventListener("click", () => choose(i)));
