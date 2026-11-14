@@ -535,6 +535,15 @@ body[data-screen="game"] footer,body[data-screen="territory"] footer,body[data-s
 .tw-end-icon{font-size:3rem;line-height:1.2}
 .tw-end-card h2{margin:.3rem 0}
 .tw-end-sub{margin:0;color:var(--sub)}
+/* 도트 앤 박스 오답 노트 */
+#territoryEnd .tw-end-card{max-height:100%;overflow:auto}
+.wrong-notes{margin:.9rem 0 0;text-align:left;display:grid;gap:.6rem}
+.wrong-notes .wn-empty{margin:0;padding:.9rem;text-align:center;color:var(--sub);background:#fff8ea;border:2px dashed #e6d3ac;border-radius:12px}
+.wrong-note{padding:.75rem .9rem;background:#fff8ea;border:2px solid #e6d3ac;border-radius:12px;line-height:1.55;word-break:keep-all}
+.wrong-note .wn-no{display:inline-block;margin-bottom:.2rem;font-size:.8rem;font-weight:800;color:#e0556f}
+.wrong-note .wn-text{margin:0 0 .35rem;font-weight:700;color:var(--ink)}
+.wrong-note .wn-ans{margin:0;font-size:.92rem;color:var(--ink)}
+.wrong-note .wn-why{margin:.3rem 0 0;font-size:.9rem;color:var(--sub)}
 .tw-reveal{display:inline-flex;align-items:center;gap:.6rem;margin:1rem 0 .6rem;padding:.5rem 1.2rem;border:var(--bw) solid var(--ink);border-radius:999px;background:var(--gold-l);box-shadow:0 4px 0 var(--ink)}
 .tw-reveal span{font-family:var(--font-display);color:var(--sub)}
 .tw-reveal b{font-family:var(--font-display);font-weight:400;font-size:1.7rem;color:var(--rose)}
@@ -999,7 +1008,8 @@ input,select,textarea{font-size:max(16px,1.05rem)!important}
       <h2 id="territoryEndTitle"></h2>
       <p class="tw-end-sub" id="territoryEndSub"></p>
       <p class="closing-line">AI도 틀릴 수 있어요. 진짜인지 확인하는 건 바로 나!</p>
-      <div class="actions"><button class="secondary" id="territoryEndHome">메인 화면</button><button class="primary" id="territoryEndRetry">↻ 다시 하기</button></div>
+      <div id="territoryWrongList" class="wrong-notes" hidden></div>
+      <div class="actions"><button class="secondary" id="territoryEndWrong">📝 오답 보기</button><button class="secondary" id="territoryEndHome">메인 화면</button><button class="primary" id="territoryEndRetry">↻ 다시 하기</button></div>
     </div>
   </div>
 </section>
@@ -1949,7 +1959,7 @@ async function startTerritoryGame() {
     count, size: n, edges, idx,
     pool: [], seen: [], refilling: null, loadingQ: false, aiLoadingQ: false, aiPick: -1, genNotice: "",
     boxes: Array(n * n).fill(-1), scores: Array(count).fill(0),
-    correctAnswers: 0, attempts: 0, recordSaved: false,
+    correctAnswers: 0, attempts: 0, recordSaved: false, wrongNotes: [],
     selected: -1, question: null, finished: false, currentPlayer: 0,
     aiStatus: Array(count).fill("대기 중"), aiQuestions: Array(count).fill(null),
     lastFeedback: "정답이면 선 연결, 오답이면 -1점!"
@@ -2181,6 +2191,7 @@ function answerTerritory(answer) {
     st.lastFeedback = "정답! 선이 연결됐습니다. " + (gained ? `칸 ${gained}개를 차지했어요. 한 번 더! ` : "") + q.why;
   } else {
     st.scores[0]--; playSfx("wrong");
+    st.wrongNotes.push({ text: q.text, mine: answer, answer: q.answer, why: q.why || "" }); // 오답 노트에 기록
     st.lastFeedback = "오답! -1점이에요. 차례는 유지되니 다른 선을 골라 다시 도전하세요. " + q.why;
   }
   if (st.edges.every(e => e.owner >= 0)) { finishTerritory(); return; }
@@ -2321,8 +2332,30 @@ function finishTerritory() {
   $("territoryEndIcon").textContent = won ? (winners.length > 1 ? "🤝" : "🎉") : "🤖";
   $("territoryEndTitle").textContent = won ? (winners.length > 1 ? "무승부!" : "내가 이겼어요!") : "AI가 이겼어요";
   $("territoryEndSub").textContent = `내 점수 ${st.scores[0]}점 · 최고 점수 ${max}점`;
+  $("territoryWrongList").hidden = true; $("territoryWrongList").replaceChildren();
+  $("territoryEndWrong").textContent = `📝 오답 보기 (${st.wrongNotes.length})`;
   $("territoryEnd").hidden = false;
 }
+/* 오답 노트: 결과 창의 "오답 보기" 버튼으로 내가 틀린 문제를 다시 봅니다. */
+$("territoryEndWrong").addEventListener("click", () => {
+  const st = territoryState, box = $("territoryWrongList"); if (!st) return;
+  if (!box.hidden) { box.hidden = true; $("territoryEndWrong").textContent = `📝 오답 보기 (${st.wrongNotes.length})`; return; }
+  box.replaceChildren();
+  const label = v => v === "real" ? "진짜" : "가짜";
+  if (!st.wrongNotes.length) {
+    const p = document.createElement("p"); p.className = "wn-empty"; p.textContent = "틀린 문제가 없어요! 🎉"; box.append(p);
+  } else st.wrongNotes.forEach((w, i) => {
+    const card = document.createElement("div"); card.className = "wrong-note";
+    const no = document.createElement("span"); no.className = "wn-no"; no.textContent = `오답 ${i + 1}`;
+    const tx = document.createElement("p"); tx.className = "wn-text"; tx.textContent = w.text;
+    const an = document.createElement("p"); an.className = "wn-ans"; an.textContent = `내 답: ${label(w.mine)} → 정답: ${label(w.answer)}`;
+    card.append(no, tx, an);
+    if (w.why) { const wy = document.createElement("p"); wy.className = "wn-why"; wy.textContent = "💡 " + w.why; card.append(wy); }
+    box.append(card);
+  });
+  box.hidden = false; $("territoryEndWrong").textContent = "📝 오답 닫기";
+  box.scrollIntoView({ block: "nearest", behavior: "smooth" });
+});
 $("territoryEndHome").addEventListener("click", () => { $("territoryEnd").hidden = true; clearTerritoryTimer(); territoryState = null; hideGenerating(true); show("home"); });
 $("territoryEndRetry").addEventListener("click", () => startTerritoryGame());
 $("realAnswer").addEventListener("click", () => answerTerritory("real"));
