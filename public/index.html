@@ -904,6 +904,134 @@ input,select,textarea{font-size:max(16px,1.05rem)!important}
   #result .actions{display:flex;gap:.5rem;margin-top:1rem}
   #result .actions button{flex:1 1 0;min-width:0;min-height:3rem;font-size:1rem;padding:.5rem .6rem}
 }
+/* ---------- 화면 크기 공통: 휴대폰부터 QHD·4K·울트라와이드까지 ---------- */
+:root{
+  --app-height:100vh;
+  --base-font-size:clamp(16px,min(.833333vw,1.481481vh),32px);
+}
+@supports (height:100dvh){
+  :root{--app-height:100dvh;--base-font-size:clamp(16px,min(.833333vw,1.481481dvh),32px)}
+}
+/* CSS 화면 크기를 기준으로 확대하므로 운영체제 배율·브라우저 확대와 중복되지 않습니다. */
+html{font-size:calc(var(--base-font-size)*var(--fs))}
+body,.app{height:var(--app-height)}
+.app{
+  max-width:120rem;
+  padding:max(clamp(.6rem,1.6vw,1.25rem),env(safe-area-inset-top)) max(clamp(.75rem,2.6vw,2.25rem),env(safe-area-inset-right)) env(safe-area-inset-bottom) max(clamp(.75rem,2.6vw,2.25rem),env(safe-area-inset-left));
+}
+header,footer,.screen-head,.hud,.game-foot{flex-shrink:0}
+.screen.active{flex:1 1 0;min-width:0;scroll-padding-block:.75rem}
+.screen.active>*,.territory-layout>*,.twenty-layout>*{min-width:0}
+.screen-head{flex-wrap:wrap}
+button,input,select,textarea{max-width:100%}
+button,.online-status,.online-score,.territory-player b,.tw-pattern{overflow-wrap:anywhere}
+.actions{flex-wrap:wrap}
+.actions>button{flex-shrink:0}
+.menu-dropdown{width:min(15rem,calc(100vw - 2rem));max-height:calc(var(--app-height) - 5.5rem)}
+
+/* 여유 공간에는 비례 확대, 울트라와이드에서는 읽기 편한 최대 너비 유지 */
+.topics{max-width:100rem}
+.hero,.home-logo{max-width:100%}
+.home-logo img{max-width:min(100%,45rem);max-height:clamp(8rem,34vh,27.5rem);object-fit:contain}
+@supports (height:100dvh){.home-logo img{max-height:clamp(8rem,34dvh,27.5rem)}}
+.setup-card{width:min(73.75rem,100%)}
+.screen.setup.active{justify-content:flex-start}
+.screen.setup.active>.setup-card{flex:none;max-height:none;margin-block:auto}
+.screen.setup.active .panel{flex:none}
+#home.active{justify-content:flex-start}
+#home>.hero{flex:none;margin-top:auto}
+#home>.topics{flex:none;margin-bottom:auto}
+#question{max-width:53.75rem}
+.answer{min-height:6rem}
+.o-rain{height:clamp(16.25rem,42vh,27rem)}
+.o-rain .o-ans{min-height:4.75rem}
+
+/* 게임판은 실제 남은 높이를 재고 조절하고, 공간이 부족하면 스크롤 허용 */
+.territory-board{width:min(100%,var(--territory-board-size,calc(var(--app-height) - 22rem)))}
+.territory-layout{flex-shrink:0}
+.territory-question{min-height:0}
+.twenty-layout{grid-template-rows:minmax(0,1fr)}
+.twenty-main{height:var(--twenty-main-height,calc(var(--app-height) - 12rem));min-height:0}
+.tw-log{min-height:0;height:auto}
+.tw-entry,.tw-input,.tw-bubble{flex-shrink:0}
+.tw-entry{min-width:0}
+.tw-pattern,.tw-reveal{max-width:100%;overflow-wrap:anywhere}
+.tw-reveal{flex-wrap:wrap;justify-content:center}
+
+/* 결과·오답 내용은 긴 문장과 확대 상태에서도 잘리지 않게 일반 흐름에 배치 */
+#result.screen.setup.active{overflow-y:auto;padding-block:.75rem}
+#result.screen.setup.active .setup-card{width:min(104rem,100%);height:auto;max-height:none;flex:none}
+#result.screen.setup.active .panel{display:flex;flex:none;min-height:0}
+#result .setup-head{padding-top:0}
+#result .result.score-only{position:static;padding:.7rem 1rem!important}
+#result .result.score-only span{font-size:1.25rem}
+#result .result.score-only strong{font-size:2.4rem}
+#result #resultClosing{position:static;max-width:100%!important;margin:.5rem auto!important;font-size:1.3rem!important;text-align:center}
+#result .review-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,20rem),1fr));flex:none;max-height:none;overflow:visible;align-items:start}
+#result .review{flex:none;min-width:0;overflow:visible}
+#result .review h3{font-size:1.1rem;line-height:1.5}
+#result .review p{font-size:1rem;line-height:1.5}
+
+/* 창·팝업도 같은 배율을 사용하고, 낮은 화면에서는 위아래로 접근 가능 */
+#onlineOverlay{max-height:var(--app-height);overflow-x:hidden}
+.online-card{width:min(47.5rem,100%);min-width:0;flex:none}
+#onlineOverlay[data-panel="play"] .online-card{width:min(61.25rem,100%)}
+#onlineOverlay[data-panel="play"][data-mode="dots"] .online-card{width:min(100rem,100%)}
+#onlineOverlay[data-mode="dots"] #onlineDotsCanvas{width:min(100%,max(16rem,calc(var(--app-height) - 22rem)));height:auto}
+.online-actions,.tw-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+#twentyLog{max-height:min(36vh,22rem)!important;overflow-wrap:anywhere}
+.rules-overlay,.gen-overlay,.tw-end{overflow:auto}
+.rules-poster{width:min(68.75rem,100%);max-height:calc(var(--app-height) - 2rem);flex:none;margin:auto}
+.records-card{width:min(56.25rem,100%);max-height:calc(var(--app-height) - 2rem);margin:auto;flex:none}
+.records-head{flex-wrap:wrap}
+.gen-card{width:min(26.25rem,100%);max-height:calc(var(--app-height) - 2rem);overflow:auto;margin:auto;flex:none}
+.tw-end-card{width:min(32.5rem,100%);max-height:100%;overflow:auto;margin:auto;flex:none}
+#twEnd .tw-end-card{width:min(56.25rem,100%)}
+#phoneWarnPopup>div{width:min(23.75rem,100%)!important;max-height:calc(var(--app-height) - 2rem);overflow:auto;margin:auto;flex:none}
+#aiLoading{max-width:calc(100vw - 2rem);right:max(1rem,env(safe-area-inset-right))}
+
+/* 태블릿과 분할 창: 게임판·문제를 위아래로 배치 */
+@media (max-width:1100px){
+  .territory-layout,.twenty-layout{grid-template-columns:minmax(0,1fr);grid-template-rows:auto;flex:0 0 auto}
+  .territory-question{order:-1;position:static}
+  #territoryPrompt{min-height:0}
+  .twenty-side{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+  .tw-giveup{grid-column:1/-1}
+  #onlineOverlay[data-panel="play"][data-mode="dots"] #onlinePlay{grid-template-columns:minmax(0,1fr);grid-template-areas:"score" "status" "quiz" "board"}
+  #onlineOverlay[data-mode="dots"] #onlineDotsCanvas{width:min(100%,max(16rem,calc(var(--app-height) - 24rem)))}
+}
+@media (max-width:700px){
+  .topic-card .ic{height:100%}
+  .topic-card .go{margin:0 .8rem 0 0}
+}
+@media (max-width:600px){
+  .answer{min-height:4.75rem}
+  .online-actions{grid-template-columns:minmax(0,1fr)}
+  #result .review-list{grid-template-columns:minmax(0,1fr)}
+  .rule-steps{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .choices,.choices.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #levels.choices{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .choice small{font-size:.85rem}
+  .tw-pattern{word-break:break-word}
+}
+@media (max-width:360px){
+  .topic-card{grid-template-columns:4rem minmax(0,1fr) auto}
+  .tc-body{padding-left:.6rem}
+  .topic-card .tag{padding-inline:.3rem;font-size:.75rem}
+  .topic-card .go{margin-right:.4rem;width:2.75rem}
+  .twenty-side,.rule-steps{grid-template-columns:minmax(0,1fr)}
+  .tw-actions{grid-template-columns:minmax(0,1fr)}
+  .actions>button{flex:1 1 100%;min-width:0}
+}
+@media (max-height:500px) and (orientation:landscape){
+  .home-logo img{max-height:30vh}
+  .territory-question{position:static}
+  .rules-poster,.records-card{max-height:calc(var(--app-height) - 1rem)}
+}
+@media (pointer:coarse){
+  button{min-height:44px}
+  .menu-toggle{min-width:44px;min-height:44px}
+}
 </style>
 </head>
 <body data-screen="home">
@@ -1473,42 +1601,62 @@ function setFontScale(v) {
   fitQuestionLayout();
   scheduleFit();
 }
-/* 글씨를 키우거나 화면이 작아도 스크롤 없이 한 화면에 들어오도록, 넘칠 때만 글씨를 필요한 만큼 줄여 맞춥니다.
-   (휴대폰 폭은 원래 세로로 스크롤하는 화면이라 건드리지 않아요.) */
-let fitFrame = 0, fitEffective = 1;
+/* 사용자가 고른 글씨 크기는 유지합니다. 좁거나 낮은 창에서는 읽을 수 있게 스크롤합니다. */
+let fitFrame = 0;
 function screenOverflows() {
   const a = document.querySelector(".screen.active");
   if (!a) return false;
-  if (a.scrollHeight > a.clientHeight) return true;
-  // 화면 안의 카드·목록이 자기 안에서 스크롤되거나 내용이 잘리는 경우도 넘친 것으로 봅니다.
-  return [...a.querySelectorAll(".setup-card,.setup-card .panel,.review-list,.territory-layout,.twenty-layout,.twenty-main")]
-    .some(el => el.scrollHeight > el.clientHeight);
+  return a.scrollHeight > a.clientHeight + 1 || a.scrollWidth > a.clientWidth + 1;
+}
+function setLayoutPixels(el, name, value) {
+  const next = Math.max(0, Math.floor(value)) + "px";
+  if (el.style.getPropertyValue(name) !== next) el.style.setProperty(name, next);
+}
+function fitGamePanels() {
+  const screen = document.querySelector(".screen.active");
+  if (!screen) return;
+  const cs = getComputedStyle(screen), bottom = parseFloat(cs.paddingBottom) || 0;
+  const roomBelow = el => screen.clientHeight - (el.getBoundingClientRect().top - screen.getBoundingClientRect().top + screen.scrollTop) - bottom - 10;
+  if (screen.id === "territory") {
+    const board = $("territoryBoard"), wrap = board.parentElement, style = getComputedStyle(wrap);
+    const width = Math.max(0, wrap.clientWidth - (parseFloat(style.paddingLeft) || 0) - (parseFloat(style.paddingRight) || 0));
+    const extra = Math.max(0, wrap.getBoundingClientRect().height - board.getBoundingClientRect().height);
+    const minimum = Math.min(width, 20 * parseFloat(getComputedStyle(document.documentElement).fontSize));
+    setLayoutPixels(board, "--territory-board-size", Math.min(width, Math.max(minimum, roomBelow(wrap) - extra)));
+  }
+  if (screen.id === "twenty") {
+    const main = screen.querySelector(".twenty-main"), input = screen.querySelector(".tw-input");
+    const minimum = input.offsetHeight + Math.min(160, Math.max(80, screen.clientHeight * .24)) + 4;
+    setLayoutPixels(main, "--twenty-main-height", Math.max(minimum, roomBelow(main)));
+  }
 }
 function autoFit() {
   fitFrame = 0;
   const root = document.documentElement;
-  const apply = v => { root.style.setProperty("--fs", v); fitQuestionLayout(); };
-  let eff = fontScale;
+  const viewport = window.visualViewport;
+  const height = viewport && Math.abs(viewport.scale - 1) < .01 ? viewport.height : window.innerHeight;
+  setLayoutPixels(root, "--app-height", height);
+  root.style.setProperty("--fs", fontScale);
   root.classList.remove("tight");
-  apply(eff);
-  if (!window.matchMedia("(max-width:860px)").matches && screenOverflows()) {
-    root.classList.add("tight"); // 1단계: 여백·최소 높이를 줄여 봅니다
-    apply(eff);
+  if (window.matchMedia("(min-width:1101px) and (min-height:700px)").matches && screenOverflows()) {
+    root.classList.add("tight"); // 넓은 창에서 여백만 먼저 줄여 봅니다.
   }
-  if (!window.matchMedia("(max-width:860px)").matches && screenOverflows()) {
-    let lo = .5, hi = fontScale; // 2단계: hi는 넘치고 lo는 들어간다고 보고 글씨를 이분 탐색으로 줄입니다
-    for (let i = 0; i < 7; i++) { const mid = (lo + hi) / 2; apply(mid); if (screenOverflows()) hi = mid; else lo = mid; }
-    eff = Math.floor(lo * 100) / 100;
-    apply(eff);
-    for (let i = 0; i < 12 && eff > .5 && screenOverflows(); i++) { eff = Math.round((eff - .01) * 100) / 100; apply(eff); } // 게임 화면처럼 높이가 글씨에 비례하지 않는 곳의 1px 남음 방지
-  }
-  fitEffective = eff;
+  fitQuestionLayout();
+  fitGamePanels();
   const shown = Math.round(fontScale * 100) + "%";
-  $("fontSizeValue").textContent = eff < fontScale - .005 ? `${shown} → 화면에 맞춰 ${Math.round(eff * 100)}%` : shown;
+  // 같은 글자를 매번 다시 쓰면 MutationObserver가 계속 다음 프레임을 예약합니다.
+  if ($("fontSizeValue").textContent !== shown) $("fontSizeValue").textContent = shown;
 }
 function scheduleFit() { if (!fitFrame) fitFrame = requestAnimationFrame(autoFit); }
 window.scheduleFit = scheduleFit;
 window.addEventListener("resize", scheduleFit);
+window.addEventListener("load", scheduleFit);
+window.addEventListener("orientationchange", scheduleFit);
+if (window.visualViewport) window.visualViewport.addEventListener("resize", scheduleFit);
+if (document.fonts) {
+  document.fonts.ready.then(scheduleFit);
+  document.fonts.addEventListener("loadingdone", scheduleFit);
+}
 new MutationObserver(scheduleFit).observe(document.querySelector(".app"), { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["hidden", "class"] });
 $("fontSmaller").addEventListener("click", () => setFontScale(fontScale - .1));
 $("fontLarger").addEventListener("click", () => setFontScale(fontScale + .1));
@@ -1702,18 +1850,18 @@ function fitQuestionLayout() {
   const area = document.querySelector(".question-area"), lanes = document.querySelector(".lanes"), arena = $("arena");
   if (!area || !lanes || !arena || !$("game").classList.contains("active")) return;
   const mobile = window.matchMedia("(max-width:600px), (max-height:500px)").matches;
-  const top = Math.max(120, Math.ceil(area.offsetTop + area.offsetHeight + (mobile ? 8 : 12)));
+  const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+  const top = Math.max(mobile ? 100 : 7.5 * rem, Math.ceil(area.offsetTop + area.offsetHeight + (mobile ? 8 : 12)));
   lanes.style.top = top + "px";
-  // 게임 화면이 창 높이를 꽉 채우도록, 아래 조작 영역을 뺀 남은 높이를 산성비 영역에 줍니다.
-  // 휴대폰 주소창이 나타나고 사라지는 높이까지 반영하도록 visualViewport를 우선 사용합니다.
-  const foot = document.querySelector("#game .game-foot");
-  const vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
-  const room = vh - arena.getBoundingClientRect().top - (foot ? foot.offsetHeight : 90) - (mobile ? 18 : 34);
-  arena.style.height = Math.max(top + (mobile ? 190 : 170), mobile ? 300 : 280, Math.floor(room)) + "px";
+  const screen = $("game"), style = getComputedStyle(screen), foot = screen.querySelector(".game-foot");
+  const inset = arena.getBoundingClientRect().top - screen.getBoundingClientRect().top + screen.scrollTop;
+  const room = screen.clientHeight - inset - (foot ? foot.offsetHeight : 90) - (parseFloat(style.rowGap) || 0) - (parseFloat(style.paddingBottom) || 0) - 8;
+  const answerHeight = Math.max(0, ...[...lanes.querySelectorAll(".answer")].map(el => el.offsetHeight));
+  // 긴 선택지와 확대된 글씨도 바닥 아래로 잘리지 않게 최소 이동 공간을 확보합니다.
+  const minimum = top + Math.max(mobile ? 190 : 170, answerHeight + 130);
+  const height = Math.max(minimum, Math.floor(room)) + "px";
+  if (arena.style.height !== height) arena.style.height = height;
 }
-window.addEventListener("resize", fitQuestionLayout);
-window.addEventListener("orientationchange", () => setTimeout(fitQuestionLayout, 250));
-if (window.visualViewport) window.visualViewport.addEventListener("resize", fitQuestionLayout);
 /* 휴대폰에서 화면 밖에 있는 요소를 부드럽게 보이게 합니다. */
 function revealOnMobile(el) {
   if (!el || !window.matchMedia("(max-width:860px)").matches) return;
@@ -1810,7 +1958,7 @@ function tick(now) {
   if (!lastFrame) lastFrame = now;
   const dt = Math.min((now - lastFrame) / 1000, .05); lastFrame = now;
   q.elapsed += dt * 1000;
-  const lane = buttons[0].parentElement.parentElement, maxY = Math.max(35, lane.clientHeight - 110);
+  const lane = buttons[0].parentElement.parentElement, maxY = Math.max(0, lane.clientHeight - Math.max(...buttons.map(b => b.offsetHeight)) - 40);
   const progress = Math.min(1, q.elapsed / q.duration), y = 30 + progress * maxY;
   buttons.forEach(b => b.style.top = y + "px");
   $("progressFill").style.width = (progress * 100) + "%";
@@ -2612,9 +2760,50 @@ $("twentyHome").addEventListener("click", () => { tw.gen++; hideGenerating(true)
   }
   function renderPlayers(players) { $o("onlinePlayers").textContent = players.map((p, i) => `${i + 1}. ${p.name} · ${p.score}점`).join("   |   "); }
   function renderOnlineScores() { $o("onlineMyScore").textContent = myName.replace(/#\d+$/, "") + ": " + myScore + (onlineMode === "dots" ? "칸" : onlineMode === "twenty" ? "승" : "점"); $o("onlineOppScore").textContent = "상대: " + opponentScore + (onlineMode === "dots" ? "칸" : onlineMode === "twenty" ? "승" : "점"); }
-  let hoverDotLine = null;
+  let hoverDotLine = null, dotsAnimationFrame = 0, dotsResizeFrame = 0;
+  // 그리기와 클릭 판정은 640 좌표계를 공유하고, 실제 픽셀 수만 표시 크기·DPR에 맞춥니다.
+  function onlineCanvasBox() {
+    const canvas = $o("onlineDotsCanvas"), rect = canvas.getBoundingClientRect(), style = getComputedStyle(canvas);
+    const left = parseFloat(style.borderLeftWidth) || 0, top = parseFloat(style.borderTopWidth) || 0;
+    return { canvas, left: rect.left + left, top: rect.top + top,
+      width: Math.max(0, rect.width - left - (parseFloat(style.borderRightWidth) || 0)),
+      height: Math.max(0, rect.height - top - (parseFloat(style.borderBottomWidth) || 0)) };
+  }
+  function prepareOnlineDotsCanvas() {
+    const box = onlineCanvasBox();
+    if (box.width <= 0 || box.height <= 0) return null;
+    const ratio = Math.max(1, window.devicePixelRatio || 1);
+    // 매우 큰 화면에서도 불필요하게 거대한 버퍼를 만들지 않습니다.
+    const width = Math.min(4096, Math.ceil(box.width * ratio)), height = Math.min(4096, Math.ceil(box.height * ratio));
+    if (box.canvas.width !== width) box.canvas.width = width;
+    if (box.canvas.height !== height) box.canvas.height = height;
+    const ctx = box.canvas.getContext("2d");
+    if (ctx) ctx.setTransform(width / 640, 0, 0, height / 640, 0, 0);
+    return ctx;
+  }
+  function scheduleOnlineDotsRedraw() {
+    if (!dotsState || dotsResizeFrame) return;
+    dotsResizeFrame = requestAnimationFrame(() => {
+      dotsResizeFrame = 0;
+      if (dotsState && !overlay.hidden && !$o("onlineDotsArea").hidden) drawOnlineDots(dotsState, true);
+    });
+  }
+  if (typeof ResizeObserver !== "undefined") new ResizeObserver(scheduleOnlineDotsRedraw).observe($o("onlineDotsCanvas"));
+  window.addEventListener("resize", scheduleOnlineDotsRedraw);
+  if (window.visualViewport) window.visualViewport.addEventListener("resize", scheduleOnlineDotsRedraw);
+  let densityQuery;
+  function watchCanvasDensity() {
+    if (densityQuery) densityQuery.removeEventListener("change", onCanvasDensityChange);
+    densityQuery = window.matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`);
+    densityQuery.addEventListener("change", onCanvasDensityChange);
+  }
+  function onCanvasDensityChange() { watchCanvasDensity(); scheduleOnlineDotsRedraw(); }
+  watchCanvasDensity();
   function drawOnlineDots(state, quiet) {
-    const prev = dotsState; dotsState = state; const canvas=$o("onlineDotsCanvas"), ctx=canvas.getContext("2d"), n=state.size||4, pad=42, step=(640-pad*2)/n;
+    if (dotsAnimationFrame) { cancelAnimationFrame(dotsAnimationFrame); dotsAnimationFrame = 0; }
+    const prev = dotsState; dotsState = state;
+    const ctx = prepareOnlineDotsCanvas(), n=state.size||4, pad=42, step=(640-pad*2)/n;
+    if (!ctx) return;
     // 직전 상태에서 새로 차지된 칸은 연필로 칠하는 모션을 시작 (같은 상태를 다시 그릴 때는 이어서 진행)
     if(prev!==state && prev && prev.size===state.size && prev.boxes) { let k=0; for(let r=0;r<n;r++) for(let c=0;c<n;c++) if(prev.boxes[r][c]===-1 && state.boxes[r][c]!==-1) dotsPencil[r*n+c]=performance.now()+(k++)*PENCIL_MS*.35; }
     else if(prev!==state) dotsPencil={};
@@ -2632,7 +2821,7 @@ $("twentyHome").addEventListener("click", () => { tw.gen++; hideGenerating(true)
       if(p>=.8){ctx.globalAlpha=Math.min(1,(p-.8)/.2);ctx.fillStyle=mine?"#087f6c":"#c02665";ctx.font="bold 22px Arial";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(mine?"나":"상대",pad+(c+.5)*step,pad+(r+.5)*step);ctx.globalAlpha=1;}
       if(p>0&&p<1){ctx.font="26px Arial";ctx.textAlign="left";ctx.textBaseline="bottom";ctx.fillText("✏️",tip[0],tip[1]+4);}
     }}
-    if(pencilBusy) requestAnimationFrame(()=>{ if(dotsState===state) drawOnlineDots(state); });
+    if(pencilBusy) dotsAnimationFrame = requestAnimationFrame(()=>{ dotsAnimationFrame = 0; if(dotsState===state) drawOnlineDots(state,true); });
     ctx.lineCap="round";
     // 사용하지 않은 선도 연한 회색으로 모두 표시해 판의 격자가 보이게 함
     // 빈 선: 내가 고른 선은 파랑, 마우스를 올린 선은 노랑으로 가늘게 표시
@@ -2645,7 +2834,9 @@ $("twentyHome").addEventListener("click", () => { tw.gen++; hideGenerating(true)
     myScore=state.scores[state.you];opponentScore=state.scores[1-state.you];renderOnlineScores();
   }
   function onlineDotLineAt(e){
-    const canvas=$o("onlineDotsCanvas"),rect=canvas.getBoundingClientRect(),x=(e.clientX-rect.left)/rect.width*640,y=(e.clientY-rect.top)/rect.height*640,n=dotsState.size||4,pad=42,step=(640-pad*2)/n;let best=null,dist=1e9;
+    const box=onlineCanvasBox();
+    if(!dotsState || box.width<=0 || box.height<=0)return null;
+    const x=(e.clientX-box.left)/box.width*640,y=(e.clientY-box.top)/box.height*640,n=dotsState.size||4,pad=42,step=(640-pad*2)/n;let best=null,dist=1e9;
     // 선의 가운데점까지 거리가 아니라 실제 선분까지의 최단거리로 판정
     const segmentDistance=(px,py,x1,y1,x2,y2)=>{const dx=x2-x1,dy=y2-y1,len=dx*dx+dy*dy;const t=len?Math.max(0,Math.min(1,((px-x1)*dx+(py-y1)*dy)/len)):0;return Math.hypot(px-(x1+t*dx),py-(y1+t*dy));};
     for(let r=0;r<=n;r++)for(let c=0;c<n;c++){const k=`h-${r}-${c}`;if(dotsState.lines[k]!==undefined)continue;const d=segmentDistance(x,y,pad+c*step,pad+r*step,pad+(c+1)*step,pad+r*step);if(d<dist){dist=d;best=k;}}
@@ -2751,7 +2942,7 @@ $("twentyHome").addEventListener("click", () => { tw.gen++; hideGenerating(true)
       const step = now => {
         if (answered) return;
         if (!start) start = now;
-        const p = Math.min(1, (now - start) / duration), maxY = Math.max(30, arena.clientHeight - 110);
+        const p = Math.min(1, (now - start) / duration), maxY = Math.max(0, arena.clientHeight - Math.max(...btns.map(b => b.offsetHeight)) - 38);
         btns.forEach(b => b.style.top = (26 + p * maxY) + "px");
         fill.style.width = (p * 100) + "%";
         if (p >= 1) { submit(-1); return; }
