@@ -1032,6 +1032,183 @@ button,.online-status,.online-score,.territory-player b,.tw-pattern{overflow-wra
   button{min-height:44px}
   .menu-toggle{min-width:44px;min-height:44px}
 }
+/* 휴대폰: 150% 글씨를 유지하고 화면 자체는 스크롤하지 않습니다.
+   긴 문제·대화·오답만 정해진 영역 안에서 스크롤합니다. */
+html.phone-fit .app{padding:max(4px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) env(safe-area-inset-bottom) max(8px,env(safe-area-inset-left))}
+html.phone-fit header{min-height:44px;padding-bottom:4px;gap:8px}
+html.phone-fit .logo{font-size:1rem}
+html.phone-fit .brand-paw{width:32px;height:32px}
+html.phone-fit .menu-toggle{width:44px;height:44px;min-width:44px}
+html.phone-fit #onlineEntry{min-height:44px;padding:4px 12px;font-size:.85rem}
+html.phone-fit .oe-text{display:none}
+html.phone-fit .oe-short{display:inline}
+html.phone-fit footer{display:none}
+html.phone-fit .screen.active{overflow:hidden;min-height:0;padding-block:4px;gap:6px}
+html.phone-fit .screen-head{flex-wrap:nowrap;align-items:center;gap:8px}
+html.phone-fit .screen-head>div:first-child{flex:1;min-width:0}
+html.phone-fit .screen-head h1{font-size:1.05rem;line-height:1.2}
+html.phone-fit #territoryHome,html.phone-fit #twentyHome{min-height:44px;padding:4px 10px;font-size:0}
+html.phone-fit #territoryHome::after,html.phone-fit #twentyHome::after{content:"← 홈";font-size:.9rem}
+html.phone-fit .actions{flex-wrap:nowrap;gap:6px;margin-top:6px}
+html.phone-fit .actions>button{flex:1 1 0;min-width:0;min-height:44px;padding:5px 8px;font-size:.95rem}
+
+html.phone-fit #home.active{justify-content:center;gap:8px}
+html.phone-fit #home>.hero{margin-top:0}
+html.phone-fit #home>.topics{margin-bottom:0}
+html.phone-fit .home-logo img{max-width:min(100%,14rem);max-height:22vh;max-height:calc(var(--app-height)*.22)}
+html.phone-fit .hero-desc{margin:3px 0 0;font-size:.92rem;line-height:1.25}
+html.phone-fit .topic-grid{grid-template-columns:1fr;gap:6px}
+html.phone-fit .topic-card{display:grid;grid-template-columns:54px minmax(0,1fr) 44px;align-items:center;text-align:left;border-radius:16px}
+html.phone-fit .topic-card .ic{height:100%;min-height:64px;border-right:var(--bw) solid var(--ink);border-bottom:0}
+html.phone-fit .tc-body{align-items:flex-start;gap:2px;padding:6px 8px;min-width:0}
+html.phone-fit .topic-card b{font-size:1.25rem;line-height:1.15}
+html.phone-fit .topic-card .tag{max-width:100%;margin-top:0;padding:2px 4px;font-size:.78rem;line-height:1.2;white-space:nowrap}
+html.phone-fit .topic-card .go{width:36px;height:36px;margin:0 5px 0 0;padding:0;display:grid;place-items:center;font-size:0}
+html.phone-fit .topic-card .go::after{content:"▶";font-size:18px}
+
+html.phone-fit #modeScreen .setup-card{height:100%;max-height:100%;margin:0;min-height:0}
+html.phone-fit .setup-head{flex:none;margin-bottom:6px}
+html.phone-fit .setup-head h1{font-size:1.25rem;line-height:1.2;margin:0}
+html.phone-fit #modeScreen .setup-head .muted{font-size:.85rem;margin:3px 0;line-height:1.3}
+html.phone-fit .topic-chip{font-size:1rem;padding:2px 8px}
+html.phone-fit #modeScreen .panel{flex:1 1 0;min-height:0;padding:8px;gap:4px;justify-content:center}
+html.phone-fit #modeScreen .label{font-size:.95rem;line-height:1.2;margin:4px 0}
+html.phone-fit #modeSelectionStatus{display:none}
+html.phone-fit #modeScreen .choice{min-height:0;padding:6px 4px;gap:2px}
+html.phone-fit #modeScreen .choice .ch-ic{font-size:28px;line-height:1}
+html.phone-fit #modeScreen .choice b{font-size:1rem;line-height:1.2}
+html.phone-fit #modeScreen .choice small{display:none}
+html.phone-fit #levelDesc{font-size:.85rem;line-height:1.25;margin:4px 0}
+html.phone-fit #modeScreen .choices{gap:6px}
+html.phone-fit .ai-stepper{min-height:0;padding:6px;gap:6px}
+html.phone-fit .ai-count b{font-size:1.1rem}
+html.phone-fit .ai-count small{font-size:.8rem}
+html.phone-fit .ai-faces,html.phone-fit .ai-dots{display:none}
+html.phone-fit .step-btn{width:44px;height:44px;min-width:44px;font-size:1.2rem}
+
+html.phone-fit #game .arena{flex:1 1 0;height:0!important;min-height:0}
+html.phone-fit .question-area{top:4px;left:4px;right:4px;max-height:46%;overflow-y:auto;overscroll-behavior:contain}
+html.phone-fit #question{margin:4px 0;padding:6px 8px;font-size:1.05rem;line-height:1.3}
+html.phone-fit .question-area .topic{font-size:.8rem;padding:0 8px}
+html.phone-fit #subquestion{font-size:.8rem;line-height:1.25}
+html.phone-fit .lanes{bottom:8px;gap:6px;padding-inline:4px}
+html.phone-fit .answer{min-height:44px;max-height:calc(100% - 30px);overflow-y:auto;padding:6px 4px;border-radius:14px}
+html.phone-fit .answer .txt{font-size:1rem;line-height:1.3}
+html.phone-fit .stat{padding:4px 6px}
+html.phone-fit .stat strong{font-size:1.1rem}
+html.phone-fit .stat span{font-size:.65rem}
+html.phone-fit .controls{grid-template-columns:minmax(0,1fr) auto;gap:6px}
+html.phone-fit .controls .muted{display:none}
+html.phone-fit .feedback{font-size:.85rem;line-height:1.2;max-height:2.4em;overflow:auto;text-align:left;min-height:0}
+html.phone-fit #quit{min-height:44px;padding:4px 8px;font-size:.85rem}
+html.phone-fit .game-foot{gap:4px}
+
+html.phone-fit .territory-layout{display:flex;flex-direction:column;flex:1 1 0;min-height:0;gap:6px;align-items:stretch}
+html.phone-fit .territory-board-wrap{flex:1 1 0;min-height:0;display:flex;align-items:center;justify-content:center;padding:6px}
+html.phone-fit .territory-board{flex:none;max-width:100%}
+html.phone-fit .territory-board-legend,html.phone-fit #territoryHint{display:none}
+html.phone-fit .territory-stats{grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:4px}
+html.phone-fit .territory-player{gap:4px;padding:3px 5px;font-size:.75rem;line-height:1.25}
+html.phone-fit .territory-player strong{font-size:.85rem}
+html.phone-fit .territory-question{position:static;flex:0 1 auto;order:-1;max-height:30%;padding:6px;overflow:hidden}
+html.phone-fit .territory-question .case-badge{display:none}
+html.phone-fit .territory-turn{font-size:.9rem;line-height:1.2;margin:0 0 4px}
+html.phone-fit #territoryPrompt{flex:1 1 auto;min-height:0;overflow:auto;margin:0;padding:6px;font-size:1.05rem;line-height:1.3}
+html.phone-fit .case-feedback{flex:none;min-height:0;max-height:2.5em;overflow:auto;margin:4px 0 0;font-size:.8rem;line-height:1.25}
+html.phone-fit .territory-answer-row{display:none;flex:none;margin-top:6px;gap:6px}
+html.phone-fit .question-open .territory-question{max-height:62%}
+html.phone-fit .question-open .territory-answer-row{display:grid}
+html.phone-fit .territory-answer-row .primary{min-height:44px;padding:5px;font-size:1rem}
+
+html.phone-fit .twenty-layout{display:flex;flex-direction:column;flex:1 1 0;min-height:0;gap:6px}
+html.phone-fit .twenty-side{flex:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
+html.phone-fit .tw-card{padding:6px;border-radius:12px}
+html.phone-fit .tw-pattern{margin:4px 0;font-size:1.1rem;line-height:1.2;letter-spacing:.05em}
+html.phone-fit .tw-secret .case-badge{font-size:.75rem;padding:1px 4px}
+html.phone-fit .tw-len,html.phone-fit .tw-field{font-size:.75rem;line-height:1.2;margin:3px 0}
+html.phone-fit .tw-meter{padding:2px;gap:3px}
+html.phone-fit .tw-meter-head{font-size:.75rem}
+html.phone-fit .tw-meter-head b{font-size:1rem}
+html.phone-fit .tw-pips{gap:3px}
+html.phone-fit .tw-pips i{width:7px;height:7px}
+html.phone-fit .tw-giveup{min-height:44px!important;padding:4px;font-size:.85rem!important}
+html.phone-fit .twenty-main{flex:1 1 0;height:0!important;min-height:0}
+html.phone-fit .tw-log{flex:1 1 0;min-height:0;padding:6px;gap:8px}
+html.phone-fit .tw-entry{max-width:95%}
+html.phone-fit .tw-bubble{font-size:1rem;line-height:1.3;padding:6px 8px}
+html.phone-fit .tw-input{flex:none;padding:6px}
+html.phone-fit .tw-input input{min-height:44px;padding:6px 8px;line-height:1.2}
+html.phone-fit .tw-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:4px}
+html.phone-fit .tw-actions button{min-height:44px;padding:4px;font-size:.95rem}
+html.phone-fit .tw-status{font-size:.8rem;line-height:1.25;min-height:0;max-height:2.5em;overflow:auto;margin:4px 0 0}
+
+html.phone-fit #result.screen.setup.active .setup-card{height:100%;min-height:0;margin:0}
+html.phone-fit #result .setup-head{max-height:28%;overflow:auto}
+html.phone-fit #result.screen.setup.active .panel{flex:1 1 0;min-height:0;padding:6px}
+html.phone-fit #result .results{flex:none;margin:0}
+html.phone-fit #result .section-title{flex:none;font-size:1.1rem;margin:6px 0}
+html.phone-fit #result .review-list{flex:1 1 0;min-height:0;overflow-y:auto;display:flex;flex-direction:column;align-items:stretch}
+html.phone-fit #result .review{flex:none;padding:6px}
+html.phone-fit #result .actions{flex:none;margin-top:6px}
+html.phone-fit #result .panel>.muted{flex:none;font-size:.85rem;line-height:1.2;margin:3px 0}
+html.phone-fit #result .result.score-only{padding:4px 8px!important}
+html.phone-fit #result .result.score-only strong{font-size:1.5rem}
+
+html.phone-short .home-logo img{max-height:calc(var(--app-height)*.12)}
+html.phone-short .hero-desc,html.phone-short #levelDesc{display:none}
+html.phone-short .tw-field,html.phone-short .tw-len,html.phone-short .tw-secret .case-badge{display:none}
+html.phone-short .twenty-side{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+html.phone-short #twTurns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
+html.phone-short .tw-meter+.tw-meter{margin-top:0}
+html.phone-short .tw-meter-head{flex-direction:column;align-items:center;line-height:1.2;font-size:.7rem;text-align:center}
+html.phone-short .tw-meter-head>*{min-width:0;max-width:100%}
+html.phone-short .tw-meter-head b{font-size:.9rem;white-space:nowrap}
+html.phone-short .tw-pattern{max-height:2.4em;overflow:auto;word-break:break-all}
+html.phone-short .tw-giveup{grid-column:1/-1;max-width:none;font-size:.75rem!important}
+/* 키보드가 열린 동안에는 입력과 대화에 높이를 우선 배정합니다. */
+html.phone-keyboard body[data-screen=twenty] header,
+html.phone-keyboard #twenty .screen-head,
+html.phone-keyboard #twenty .twenty-side{display:none}
+html.phone-fit #result.screen.setup.active{overflow:hidden}
+html.phone-short #result #resultTitle{font-size:1.25rem}
+html.phone-short #result #resultClosing{display:none}
+html.phone-short #result .section-title{font-size:1rem;margin:4px 0}
+html.phone-fit #onlineOverlay{overflow:hidden;padding:6px;min-height:0}
+html.phone-fit .online-card{display:flex;flex-direction:column;max-height:100%;height:100%;padding:8px;min-height:0}
+html.phone-fit .online-card>h2{flex:none;font-size:1.1rem;margin-bottom:6px}
+html.phone-fit .online-card>p.online-small{display:none}
+html.phone-fit #onlineLobby,html.phone-fit #onlineWaiting,html.phone-fit #onlinePlay{flex:1 1 0;min-height:0;overflow-y:auto}
+html.phone-fit #onlineClose{flex:none;min-height:44px;padding:4px;font-size:.95rem}
+@media (min-width:480px) and (max-height:520px){
+  html.phone-fit .topic-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  html.phone-fit .topic-card{grid-template-columns:44px minmax(0,1fr);padding-right:4px}
+  html.phone-fit .topic-card .go{display:none}
+  html.phone-fit .topic-card .tag{white-space:normal}
+  html.phone-fit #modeScreen .panel{display:grid;grid-template-columns:1fr 1fr;grid-template-areas:"mode-label level-label" "mode level" "description description" "actions actions";align-content:center}
+  html.phone-fit #modeChoiceLabel{grid-area:mode-label}
+  html.phone-fit #modes{grid-area:mode}
+  html.phone-fit #levelLabel{grid-area:level-label}
+  html.phone-fit #levels{grid-area:level}
+  html.phone-fit #levelDesc{grid-area:description}
+  html.phone-fit #modeScreen .actions{grid-area:actions}
+  html.phone-short body:not([data-screen="home"]) header{height:0;min-height:0;padding:0}
+  html.phone-short body:not([data-screen="home"]) .brand{display:none}
+  html.phone-short body:not([data-screen="home"]) .top-actions{position:absolute;top:max(4px,env(safe-area-inset-top));right:max(8px,env(safe-area-inset-right));z-index:1000}
+  html.phone-short .setup-head{padding-right:50px}
+  html.phone-short .screen-head{padding-right:50px;min-height:44px}
+  html.phone-short .hud{padding-right:50px}
+  html.phone-short .twenty-side{grid-template-columns:minmax(0,1fr) minmax(0,1.5fr) auto}
+  html.phone-short .tw-giveup{grid-column:auto;max-width:96px}
+  html.phone-short .territory-layout{display:grid;grid-template-columns:minmax(100px,.65fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+  html.phone-short .territory-question{order:0;max-height:100%;height:100%}
+  html.phone-short .question-open .territory-question{max-height:100%}
+  html.phone-short .territory-player{font-size:.65rem}
+  html.phone-short .territory-player strong{font-size:.75rem}
+  html.phone-short .player-dot{width:10px;height:10px}
+  html.phone-short .territory-stats{grid-template-columns:repeat(5,minmax(0,1fr))}
+  html.phone-short .territory-turn{font-size:.75rem;margin-bottom:2px}
+  html.phone-short .case-feedback{max-height:1.25em;margin-top:2px;font-size:.7rem}
+}
 </style>
 </head>
 <body data-screen="home">
@@ -1615,16 +1792,22 @@ function setLayoutPixels(el, name, value) {
 function fitGamePanels() {
   const screen = document.querySelector(".screen.active");
   if (!screen) return;
+  const phone = document.documentElement.classList.contains("phone-fit");
   const cs = getComputedStyle(screen), bottom = parseFloat(cs.paddingBottom) || 0;
   const roomBelow = el => screen.clientHeight - (el.getBoundingClientRect().top - screen.getBoundingClientRect().top + screen.scrollTop) - bottom - 10;
   if (screen.id === "territory") {
     const board = $("territoryBoard"), wrap = board.parentElement, style = getComputedStyle(wrap);
     const width = Math.max(0, wrap.clientWidth - (parseFloat(style.paddingLeft) || 0) - (parseFloat(style.paddingRight) || 0));
     const extra = Math.max(0, wrap.getBoundingClientRect().height - board.getBoundingClientRect().height);
-    const minimum = Math.min(width, 20 * parseFloat(getComputedStyle(document.documentElement).fontSize));
-    setLayoutPixels(board, "--territory-board-size", Math.min(width, Math.max(minimum, roomBelow(wrap) - extra)));
+    if (phone) {
+      const height = Math.max(0, wrap.clientHeight - (parseFloat(style.paddingTop) || 0) - (parseFloat(style.paddingBottom) || 0));
+      setLayoutPixels(board, "--territory-board-size", Math.min(width, height));
+    } else {
+      const minimum = Math.min(width, 20 * parseFloat(getComputedStyle(document.documentElement).fontSize));
+      setLayoutPixels(board, "--territory-board-size", Math.min(width, Math.max(minimum, roomBelow(wrap) - extra)));
+    }
   }
-  if (screen.id === "twenty") {
+  if (screen.id === "twenty" && !phone) {
     const main = screen.querySelector(".twenty-main"), input = screen.querySelector(".tw-input");
     const minimum = input.offsetHeight + Math.min(160, Math.max(80, screen.clientHeight * .24)) + 4;
     setLayoutPixels(main, "--twenty-main-height", Math.max(minimum, roomBelow(main)));
@@ -1637,6 +1820,10 @@ function autoFit() {
   const height = viewport && Math.abs(viewport.scale - 1) < .01 ? viewport.height : window.innerHeight;
   setLayoutPixels(root, "--app-height", height);
   root.style.setProperty("--fs", fontScale);
+  const phone = window.matchMedia("(max-width:860px), (max-width:1100px) and (pointer:coarse)").matches;
+  root.classList.toggle("phone-fit", phone);
+  root.classList.toggle("phone-short", phone && height < 620);
+  root.classList.toggle("phone-keyboard", phone && height < 520 && document.activeElement?.id === "twText");
   root.classList.remove("tight");
   if (window.matchMedia("(min-width:1101px) and (min-height:700px)").matches && screenOverflows()) {
     root.classList.add("tight"); // 넓은 창에서 여백만 먼저 줄여 봅니다.
@@ -1652,6 +1839,8 @@ window.scheduleFit = scheduleFit;
 window.addEventListener("resize", scheduleFit);
 window.addEventListener("load", scheduleFit);
 window.addEventListener("orientationchange", scheduleFit);
+document.addEventListener("focusin", scheduleFit);
+document.addEventListener("focusout", scheduleFit);
 if (window.visualViewport) window.visualViewport.addEventListener("resize", scheduleFit);
 if (document.fonts) {
   document.fonts.ready.then(scheduleFit);
@@ -1851,6 +2040,10 @@ function fitQuestionLayout() {
   if (!area || !lanes || !arena || !$("game").classList.contains("active")) return;
   const mobile = window.matchMedia("(max-width:600px), (max-height:500px)").matches;
   const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+  if (document.documentElement.classList.contains("phone-fit")) {
+    lanes.style.top = Math.ceil(area.offsetTop + area.offsetHeight + 6) + "px";
+    return; // 휴대폰은 flex가 준 남은 높이를 사용하며 최소 높이로 화면을 밀어내지 않습니다.
+  }
   const top = Math.max(mobile ? 100 : 7.5 * rem, Math.ceil(area.offsetTop + area.offsetHeight + (mobile ? 8 : 12)));
   lanes.style.top = top + "px";
   const screen = $("game"), style = getComputedStyle(screen), foot = screen.querySelector(".game-foot");
@@ -2200,6 +2393,7 @@ function pencilHatch(x, y, w, h, seed) {
 }
 function renderTerritory() {
   const st = territoryState; if (!st) return;
+  $("territory").classList.toggle("question-open", !!st.question && !st.finished);
   const stats = $("territoryStats"); stats.replaceChildren();
   for (let p = 0; p < st.count; p++) {
     const el = document.createElement("div");
