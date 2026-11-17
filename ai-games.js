@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { askJSON, isConfigured, config, ClaudeError } = require('./claude');
+const bank = require('./question-bank'); // 만든 문제를 파일에 쌓아 두고 재사용
 
 const router = express.Router();
 
@@ -242,13 +243,24 @@ async function refillFactPool() {
     }
   } finally { factFilling = false; }
 }
-setTimeout(() => { refillFactPool(); }, 1500).unref();
+setTimeout(() => { if (!bank.readyFacts()) refillFactPool(); }, 1500).unref(); // 저장소가 충분하면 시작할 때 비용을 쓰지 않습니다
 async function takeFactBatch(count, fromClient) {
+  const need = Math.ceil(count * 0.6);
+  // 저장소에 문제가 충분히 쌓였으면 대부분 거기서 바로 냅니다. (Claude 호출 비용 없음)
+  if (bank.readyFacts() && bank.useBank()) {
+    const items = bank.sampleFacts(count, fromClient);
+    if (items.length >= need) return items;
+  }
   if (count === FACT_BATCH_COUNT) {
     while (factPool.length) {
       // 이미 본 문장과 비슷한 것은 걸러 냅니다.
       const items = factPool.shift().filter(i => !fromClient.some(k => similar(k, i.text)));
-      if (items.length >= Math.ceil(count * 0.6)) { refillFactPool(); return items; }
+      if (items.length >= need) { refillFactPool(); return items; }
+    }
+    // 미리 만든 묶음이 없으면: 저장소가 충분할 때는 저장소에서 내고, 뒤에서 새 묶음을 채웁니다.
+    if (bank.readyFacts()) {
+      const items = bank.sampleFacts(count, fromClient);
+      if (items.length >= need) { refillFactPool(); return items; }
     }
     refillFactPool();
   }
@@ -257,12 +269,13 @@ async function takeFactBatch(count, fromClient) {
 router.post('/fact-questions', rateLimit, async (req, res) => {
   const count = Math.min(10, Math.max(3, Number(req.body?.count) || 8));
   const fromClient = (Array.isArray(req.body?.avoid) ? req.body.avoid : []).slice(-40).map(t => String(t).slice(0, 120));
-  try {
-    const items = await takeFactBatch(count, fromClient);
-    if (!items.length) return res.status(502).json({ message: 'Claude가 새로운 문제를 만들지 못했어요.' });
-    items.forEach(i => remember(history.facts, i.text, 300));
-    res.json({ items });
-  } catch (e) { sendError(res, e); }
+  let items = [], failure = null;
+  try { items = await takeFactBatch(count, fromClient); }
+  catch (e) { failure = e; console.warn('가짜 판별 문제 만들기 실패, 저장소의 문제로 대신합니다:', e.message); }
+  if (!items.length) items = bank.sampleFacts(count, fromClient); // Claude가 안 될 때도 저장된 문제로 이어 갑니다
+  if (!items.length) return failure ? sendError(res, failure) : res.status(502).json({ message: 'Claude가 새로운 문제를 만들지 못했어요.' });
+  items.forEach(i => remember(history.facts, i.text, 300));
+  res.json({ items });
 });
 async function generateFactItems(count, fromClient) {
   // 이번 판에서 나온 것 + 서버가 기억하는 지난 판들의 문장을 모두 피합니다.
@@ -299,6 +312,7 @@ async function generateFactItems(count, fromClient) {
       }
     }
   }
+  bank.addFacts(items); // 만든 문제는 저장소에 쌓아 두고 다음에 다시 씁니다
   return items;
 }
 
@@ -393,6 +407,7 @@ async function generateLitItems(level, count, fromClient) {
       items.push({ q, a: rightFirst ? [right, wrong] : [wrong, right], c: rightFirst ? 0 : 1, e: why });
     }
   }
+  bank.addLit(level, items); // 만든 문제는 저장소에 쌓아 두고 다음에 다시 씁니다
   return items;
 }
 // 난이도마다 창고가 따로 있고, 난이도와 상관없이 모두 3묶음씩 쌓아 둡니다.
@@ -413,13 +428,23 @@ async function refillLitPool(level) {
     }
   } finally { st.filling = false; }
 }
-setTimeout(async () => { for (const lv of ['medium', 'easy', 'hard']) await refillLitPool(lv); }, 2500).unref();
+setTimeout(async () => { for (const lv of ['medium', 'easy', 'hard']) if (!bank.readyLit(lv)) await refillLitPool(lv); }, 2500).unref();
 async function takeLitBatch(level, count, fromClient) {
+  const need = Math.ceil(count * 0.6);
+  // 저장소에 문제가 충분히 쌓였으면 대부분 거기서 바로 냅니다. (Claude 호출 비용 없음)
+  if (bank.readyLit(level) && bank.useBank()) {
+    const items = bank.sampleLit(level, count, fromClient);
+    if (items.length >= need) return items;
+  }
   if (count === LIT_BATCH_COUNT) {
     const pool = litPools[level];
     while (pool.length) {
       const items = pool.shift().filter(i => !fromClient.some(k => similar(k, i.q)));
-      if (items.length >= Math.ceil(count * 0.6)) { refillLitPool(level); return items; }
+      if (items.length >= need) { refillLitPool(level); return items; }
+    }
+    if (bank.readyLit(level)) {
+      const items = bank.sampleLit(level, count, fromClient);
+      if (items.length >= need) { refillLitPool(level); return items; }
     }
     refillLitPool(level);
   }
@@ -429,12 +454,13 @@ router.post('/literacy-questions', rateLimit, async (req, res) => {
   const count = Math.min(12, Math.max(3, Number(req.body?.count) || LIT_BATCH_COUNT));
   const level = cleanLevel(req.body?.level);
   const fromClient = (Array.isArray(req.body?.avoid) ? req.body.avoid : []).slice(-40).map(t => String(t).slice(0, 160));
-  try {
-    const items = await takeLitBatch(level, count, fromClient);
-    if (!items.length) return res.status(502).json({ message: 'Claude가 새로운 문제를 만들지 못했어요.' });
-    items.forEach(i => remember(history.lit, i.q, 200));
-    res.json({ items });
-  } catch (e) { sendError(res, e); }
+  let items = [], failure = null;
+  try { items = await takeLitBatch(level, count, fromClient); }
+  catch (e) { failure = e; console.warn(`문해력(${level}) 문제 만들기 실패, 저장소의 문제로 대신합니다:`, e.message); }
+  if (!items.length) items = bank.sampleLit(level, count, fromClient); // Claude가 안 될 때도 저장된 문제로 이어 갑니다
+  if (!items.length) return failure ? sendError(res, failure) : res.status(502).json({ message: 'Claude가 새로운 문제를 만들지 못했어요.' });
+  items.forEach(i => remember(history.lit, i.q, 200));
+  res.json({ items });
 });
 
 /* ---------- AI 윤리 스무고개 ---------- */
