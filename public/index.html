@@ -1032,6 +1032,160 @@ button,.online-status,.online-score,.territory-player b,.tw-pattern{overflow-wra
   button{min-height:44px}
   .menu-toggle{min-width:44px;min-height:44px}
 }
+
+/* ==========================================================
+   휴대폰 전체 화면: 페이지가 스크롤되지 않게 한 화면에 맞춤
+   autoFit(fitPhone)이 넘치는 만큼 --fit을 줄여 전체 크기를 비례 축소합니다.
+   길이가 정해지지 않은 목록(오답 노트·대화 기록·전적)만 그 칸 안에서 넘겨 봅니다.
+   ========================================================== */
+html{font-size:calc(var(--base-font-size)*var(--fs)*var(--fit,1))}
+@media (max-width:860px), (max-height:560px){
+  html,body{overflow:hidden;overscroll-behavior:none}
+  .app{overflow:hidden}
+  .screen.active{scrollbar-width:none}
+  .screen.active::-webkit-scrollbar{display:none}
+
+  /* 홈: 로고가 화면을 너무 많이 차지하지 않게 */
+  .home-logo img{max-height:clamp(6rem,30dvh,22rem)}
+  #home>.hero{margin-top:auto}
+  #home>.topics{margin-bottom:auto}
+
+  /* html.tight(여백 줄이기)가 휴대폰 카드 배치를 깨지 않게 */
+  html.tight .hero-desc{font-size:.92rem}
+  html.tight .tc-body{padding:.45rem .5rem .45rem .9rem}
+  html.tight .topic-card .ic{height:100%;min-height:4.2rem}
+  html.tight .topic-card .go{margin:0 .8rem 0 0}
+  html.tight .topic-grid{gap:.6rem}
+  html.tight .setup-head h1{font-size:1.35rem}
+  html.tight .panel{padding:.7rem .75rem}
+  html.tight .label{margin-bottom:.5rem}
+  html.tight .choice{min-height:0}
+  html.tight footer{padding:.1rem 0 .2rem}
+
+  /* 결과(오답 노트): 머리·점수·버튼은 고정, 오답 목록만 안에서 넘겨 보기 */
+  #result.screen.setup.active{overflow:hidden;display:flex;flex-direction:column;justify-content:flex-start;padding:.4rem 0 max(.4rem,env(safe-area-inset-bottom))}
+  #result.screen.setup.active>.setup-card{flex:1 1 auto;min-height:0;height:auto;max-height:100%;margin:0;width:100%;display:flex;flex-direction:column}
+  #result.screen.setup.active .setup-head{flex:none;margin-bottom:.4rem}
+  #result.screen.setup.active .panel{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+  #result .results,#result .panel>p,#result .section-title,#result .actions{flex:none}
+  #result .section-title{margin:.5rem 0 .4rem}
+  #result .review-list{flex:1 1 auto;min-height:6rem;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;align-content:start}
+  #result .actions{margin-top:.6rem}
+  #result #resultTitle{font-size:1.6rem;margin:0}
+
+  /* 규칙 안내: 단계 그림을 옆으로 넘겨 보는 한 줄로 바꿔 창 높이 안에 들어오게 */
+  .rules-overlay{padding:max(.5rem,env(safe-area-inset-top)) .5rem max(.5rem,env(safe-area-inset-bottom))}
+  .rules-poster{display:flex;flex-direction:column;max-height:calc(var(--app-height) - 1rem);padding:.8rem .8rem 1rem}
+  .rule-tabs{flex:none;margin-bottom:.6rem;gap:.4rem}
+  .rule-tab{min-height:2.6rem}
+  .poster-title{margin:0 0 .5rem;padding:.4rem .8rem;font-size:1.3rem}
+  .poster-section{margin:.6rem 0 .3rem;font-size:1.1rem}
+  .poster-rule{font-size:1rem;line-height:1.5;margin:.2rem 0}
+  .poster-note{margin:.2rem 0 .3rem;font-size:.9rem;line-height:1.5}
+  .rule-steps{display:flex;grid-template-columns:none;gap:.6rem;margin:.2rem -.8rem .3rem;padding:.9rem .8rem .5rem;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-padding-inline:.8rem;overscroll-behavior-x:contain;scrollbar-width:none}
+  .rule-steps::-webkit-scrollbar{display:none}
+  .rule-step{flex:0 0 min(72%,15rem);scroll-snap-align:start;padding:.8rem .7rem .7rem}
+  .rule-num{top:-.6rem;left:-.25rem}
+  .rule-fig{min-height:5.5rem}
+  .rule-fig svg{max-width:7rem}
+  .mini-arena{height:6.5rem}
+  .rule-fig.keys{margin:.2rem 0}
+  .poster-actions{margin-top:.8rem}
+  .poster-actions .primary{min-height:3rem;font-size:1.15rem}
+  .poster-section:has(+ .rule-steps)::after{content:"← 옆으로 넘겨 보기 →";margin-left:auto;font-size:.75rem;color:var(--sub);letter-spacing:0}
+
+  /* 게임이 끝난 뒤 창: 오답 목록만 안에서 넘겨 보기 */
+  .tw-end,.rules-overlay,.gen-overlay,#recordsModal{overscroll-behavior:contain}
+  .tw-end-card{display:flex;flex-direction:column;max-height:calc(var(--app-height) - 1.5rem)}
+  .tw-end-card>*{flex:none}
+  #territoryWrongList{flex:1 1 auto;min-height:4rem;overflow-y:auto;overscroll-behavior:contain}
+  #twEnd{position:fixed;z-index:50;padding:max(.75rem,env(safe-area-inset-top)) .75rem max(.75rem,env(safe-area-inset-bottom))}
+  #twEnd .tw-end-card{padding:1.1rem .9rem}
+
+  /* 스무고개: 비밀 키워드와 남은 기회를 한 줄에 두어 대화창을 넓게 */
+  .twenty-side{grid-template-columns:repeat(2,minmax(0,1fr));gap:.45rem}
+  .twenty-side .tw-card{padding:.5rem .6rem}
+  .tw-pattern{margin:.25rem 0 0;font-size:1.2rem;letter-spacing:.06em}
+  .tw-giveup{grid-column:1/-1;min-height:2.4rem!important}
+
+  /* 전적 창: 표만 안에서 넘겨 보기 */
+  .records-card{display:flex;flex-direction:column}
+  .records-card>*{flex:none}
+  .records-card .records-table-wrap{flex:1 1 auto;min-height:5rem;overflow:auto}
+
+  /* 온라인 대전 창 */
+  #onlineOverlay{overscroll-behavior:contain}
+  .online-card{margin:auto}
+}
+/* 가로로 눕힌 휴대폰: 설정 화면의 고르기 칸을 한 줄로 */
+@media (max-height:560px) and (orientation:landscape){
+  .choices,.choices.two,#levels.choices{grid-template-columns:repeat(auto-fit,minmax(0,1fr))}
+  .setup-head{margin-bottom:.3rem}
+  .setup-head h1{font-size:1.3rem;margin:0}
+  .choice{min-height:0;padding:.4rem .5rem}
+  .choice .ch-ic{font-size:1.6rem}
+  .ai-stepper{min-height:0;padding:.4rem .8rem}
+  .actions{margin-top:.5rem}
+  footer{display:none}
+
+  /* 홈: 로고는 왼쪽, 주제 카드는 오른쪽 */
+  #home.active{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);align-items:center;gap:1rem}
+  #home>.hero,#home>.topics{margin:0}
+  .home-logo img{max-height:46dvh}
+  .hero-desc{font-size:.95rem}
+  .topic-grid{grid-template-columns:1fr;gap:.6rem}
+  .topic-card{display:grid;grid-template-columns:4.5rem minmax(0,1fr) auto;align-items:center;text-align:left;box-shadow:0 5px 0 var(--ink)}
+  .topic-card .ic,html.tight .topic-card .ic{height:100%;min-height:3.8rem;font-size:2rem;border-bottom:0;border-right:var(--bw) solid var(--ink)}
+  .tc-body,html.tight .tc-body{align-items:flex-start;gap:.1rem;padding:.4rem .5rem .4rem .9rem}
+  .topic-card b{font-size:1.25rem}
+  .topic-card small{font-size:.85rem}
+  .topic-card .tag{font-size:.78rem}
+  .topic-card .go,html.tight .topic-card .go{margin:0 .8rem 0 0;width:2.6rem;height:2.6rem;padding:0;display:grid;place-items:center;font-size:0}
+  .topic-card .go::after{content:"▶";font-size:1rem;padding-left:.15rem}
+
+  /* 모드 선택: 플레이 방식은 왼쪽, 난이도는 오른쪽 */
+  #modeScreen .panel:not(:has(#modes[hidden])){display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:1rem;align-items:start}
+  #modeScreen .panel:not(:has(#modes[hidden]))>#modeChoiceLabel{grid-column:1;grid-row:1}
+  #modeScreen .panel:not(:has(#modes[hidden]))>#modes{grid-column:1;grid-row:2}
+  #modeScreen .panel:not(:has(#modes[hidden]))>#levelLabel{grid-column:2;grid-row:1;margin-top:0}
+  #modeScreen .panel:not(:has(#modes[hidden]))>#levels{grid-column:2;grid-row:2}
+  #modeScreen .panel:not(:has(#modes[hidden]))>:not(.label):not(#modes):not(#levels){grid-column:1/-1}
+  #modeScreen .setup-head{display:flex;align-items:center;justify-content:center;gap:.6rem}
+  #modeScreen .setup-head .muted{margin:0}
+  .topic-chip{font-size:1.1rem}
+
+  /* 규칙 안내: 조작 방법 줄은 접어 두고 그림 칸 높이를 줄임 */
+  .poster-section:has(+ .rule-fig.keys),.rule-fig.keys{display:none}
+  #posterTitle,.rule-panel .poster-title,.poster-section:has(+ .poster-note),.poster-note{display:none}
+  .poster-section{margin:.4rem 0 .2rem}
+  .poster-actions{margin-top:.4rem}
+  .rule-fig{min-height:4rem}
+  .rule-fig svg{max-width:5rem}
+  .mini-arena{height:5rem}
+  .rule-step{flex-basis:min(42%,15rem)}
+
+  /* 도트 앤 박스: 게임판은 왼쪽, 문제는 오른쪽 */
+  .territory-layout{grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);align-items:start}
+  .territory-question{order:0}
+  .screen-head h1{font-size:1.15rem;margin:0}
+
+  /* 스무고개: 키워드 정보는 왼쪽 좁게, 대화창은 오른쪽 */
+  .twenty-layout{grid-template-columns:minmax(11rem,.36fr) minmax(0,1fr);align-items:start}
+  .twenty-side{grid-template-columns:minmax(0,1fr)}
+
+  /* 온라인 대전 창 */
+  .online-card{padding:.8rem 1rem}
+  .online-card h2{font-size:1.25rem;margin-bottom:.2rem}
+  .online-card label{margin:.35rem 0 .2rem}
+  .online-card input,.online-card select{padding:.3rem .7rem}
+
+  /* 산성비 퀴즈: 문제 칸을 줄여 떨어지는 공간 확보 */
+  #game.active{gap:.3rem}
+  .question-area .topic,#subquestion,.lane-label{display:none}
+  #question{margin:.2rem auto;padding:.4rem .8rem;font-size:1rem;line-height:1.35}
+  .stat{padding:.15rem .6rem}
+  .online-card .online-small{display:none}
+}
 </style>
 </head>
 <body data-screen="home">
@@ -1621,13 +1775,51 @@ function fitGamePanels() {
     const board = $("territoryBoard"), wrap = board.parentElement, style = getComputedStyle(wrap);
     const width = Math.max(0, wrap.clientWidth - (parseFloat(style.paddingLeft) || 0) - (parseFloat(style.paddingRight) || 0));
     const extra = Math.max(0, wrap.getBoundingClientRect().height - board.getBoundingClientRect().height);
-    const minimum = Math.min(width, 20 * parseFloat(getComputedStyle(document.documentElement).fontSize));
+    const minimum = Math.min(width, (window.matchMedia(PHONE_FIT).matches ? 15 : 20) * parseFloat(getComputedStyle(document.documentElement).fontSize)); // 휴대폰은 글씨보다 판을 먼저 줄입니다
     setLayoutPixels(board, "--territory-board-size", Math.min(width, Math.max(minimum, roomBelow(wrap) - extra)));
   }
   if (screen.id === "twenty") {
     const main = screen.querySelector(".twenty-main"), input = screen.querySelector(".tw-input");
     const minimum = input.offsetHeight + Math.min(160, Math.max(80, screen.clientHeight * .24)) + 4;
     setLayoutPixels(main, "--twenty-main-height", Math.max(minimum, roomBelow(main)));
+  }
+}
+/* 휴대폰: 화면(또는 열린 창)이 넘치면 여백을 줄이고, 그래도 넘치면 전체 크기(rem)를 조금씩 줄여 스크롤 없이 한 화면에 맞춥니다. */
+const PHONE_FIT = "(max-width:860px), (max-height:560px)";
+const MIN_FIT = .7;
+const FIT_POPUPS = [".rules-poster", ".records-card", "#onlineOverlay", ".gen-card", "#twEnd .tw-end-card", "#territoryEnd .tw-end-card", "#phoneWarnPopup>div"];
+function fitBoxes() {
+  const shown = e => e && !e.closest("[hidden]") && e.getClientRects().length;
+  const popups = FIT_POPUPS.map(s => document.querySelector(s)).filter(shown);
+  if (popups.length) return popups; // 창이 열려 있으면 그 창만 맞춥니다 (뒤 화면은 가려져 있음)
+  const a = document.querySelector(".screen.active");
+  return a ? [a] : [];
+}
+function overflowRatio(boxes) {
+  let r = 1;
+  for (const e of boxes) {
+    if (e.clientHeight > 0) r = Math.max(r, e.scrollHeight / e.clientHeight);
+    if (e.clientWidth > 0) r = Math.max(r, e.scrollWidth / e.clientWidth);
+  }
+  return r;
+}
+function relayoutPanels() { fitQuestionLayout(); fitGamePanels(); }
+function fitPhone(root) {
+  let fit = 1;
+  root.style.setProperty("--fit", "1");
+  relayoutPanels();
+  if (!window.matchMedia(PHONE_FIT).matches) return;
+  const boxes = fitBoxes();
+  let ratio = overflowRatio(boxes);
+  if (ratio <= 1) return;
+  root.classList.add("tight"); // 먼저 여백만 줄여 봅니다.
+  relayoutPanels();
+  ratio = overflowRatio(boxes);
+  for (let i = 0; i < 10 && ratio > 1 && fit > MIN_FIT; i++) {
+    fit = Math.max(MIN_FIT, fit / ratio - .005);
+    root.style.setProperty("--fit", fit.toFixed(3));
+    relayoutPanels();
+    ratio = overflowRatio(boxes);
   }
 }
 function autoFit() {
@@ -1641,8 +1833,7 @@ function autoFit() {
   if (window.matchMedia("(min-width:1101px) and (min-height:700px)").matches && screenOverflows()) {
     root.classList.add("tight"); // 넓은 창에서 여백만 먼저 줄여 봅니다.
   }
-  fitQuestionLayout();
-  fitGamePanels();
+  fitPhone(root);
   const shown = Math.round(fontScale * 100) + "%";
   // 같은 글자를 매번 다시 쓰면 MutationObserver가 계속 다음 프레임을 예약합니다.
   if ($("fontSizeValue").textContent !== shown) $("fontSizeValue").textContent = shown;
@@ -1657,7 +1848,7 @@ if (document.fonts) {
   document.fonts.ready.then(scheduleFit);
   document.fonts.addEventListener("loadingdone", scheduleFit);
 }
-new MutationObserver(scheduleFit).observe(document.querySelector(".app"), { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["hidden", "class"] });
+new MutationObserver(scheduleFit).observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["hidden", "class"] });
 $("fontSmaller").addEventListener("click", () => setFontScale(fontScale - .1));
 $("fontLarger").addEventListener("click", () => setFontScale(fontScale + .1));
 $("fontReset").addEventListener("click", () => setFontScale(1));
@@ -1858,7 +2049,9 @@ function fitQuestionLayout() {
   const room = screen.clientHeight - inset - (foot ? foot.offsetHeight : 90) - (parseFloat(style.rowGap) || 0) - (parseFloat(style.paddingBottom) || 0) - 8;
   const answerHeight = Math.max(0, ...[...lanes.querySelectorAll(".answer")].map(el => el.offsetHeight));
   // 긴 선택지와 확대된 글씨도 바닥 아래로 잘리지 않게 최소 이동 공간을 확보합니다.
-  const minimum = top + Math.max(mobile ? 190 : 170, answerHeight + 130);
+  // 가로로 눕힌 휴대폰은 높이가 낮아서 떨어지는 공간을 조금 덜 확보합니다.
+  const short = window.matchMedia("(max-height:560px) and (orientation:landscape)").matches;
+  const minimum = top + (short ? Math.max(90, answerHeight + 40) : Math.max(mobile ? 190 : 170, answerHeight + 130));
   const height = Math.max(minimum, Math.floor(room)) + "px";
   if (arena.style.height !== height) arena.style.height = height;
 }
