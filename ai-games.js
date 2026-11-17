@@ -90,12 +90,34 @@ function similar(a, b) {
 
 /* ---------- 간단한 요청 제한 (API 키 비용 보호) ---------- */
 const hits = new Map();
-function rateLimit(req, res, next) {
-  const ip = req.ip || 'unknown', now = Date.now();
-  const list = (hits.get(ip) || []).filter(t => now - t < 60000);
-  if (list.length >= 40) return res.status(429).json({ message: '요청이 너무 많아요. 잠시 후 다시 시도해 주세요.' });
-  list.push(now); hits.set(ip, list); next();
+const RATE_WINDOW_MS = 60000;
+// IP 하나가 1분에 보낼 수 있는 AI 요청 수. 같은 와이파이로 많은 사람이 접속하는 행사면 환경변수 RATE_LIMIT_PER_MIN으로 크게 올리세요.
+const RATE_MAX = Number(process.env.RATE_LIMIT_PER_MIN) || 120;
+// Render는 Cloudflare 뒤에 있어서 req.ip가 모든 사용자에게 같은 프록시 주소로 보입니다.
+// Cloudflare가 항상 덮어써서 붙여 주는 CF-Connecting-IP 헤더로 실제 접속자를 구분합니다. (없으면 req.ip)
+const clientIp = req => String(req.headers?.['cf-connecting-ip'] || req.ip || 'unknown');
+// 한도를 넘었으면 true, 아니면 이번 요청을 세고 false
+function overLimit(req) {
+  const ip = clientIp(req), now = Date.now();
+  const list = (hits.get(ip) || []).filter(t => now - t < RATE_WINDOW_MS);
+  if (list.length >= RATE_MAX) return true;
+  list.push(now); hits.set(ip, list); return false;
 }
+const TOO_MANY = { message: '요청이 너무 많아요. 잠시 후 다시 시도해 주세요.' };
+function rateLimit(req, res, next) {
+  if (overLimit(req)) return res.status(429).json(TOO_MANY);
+  next();
+}
+// 문제 요청용: 한도를 넘어도 오류를 내지 않고, 저장소에 쌓인 문제로 대신 답합니다. (Claude를 부르지 않으니 비용도 없음)
+// 저장소에 낼 문제가 없을 때만 429를 돌려줍니다.
+const rateLimitWithBank = pickFromBank => (req, res, next) => {
+  if (!overLimit(req)) return next();
+  const items = pickFromBank(req);
+  if (items.length) return res.json({ items });
+  res.status(429).json(TOO_MANY);
+};
+// 오래 조용한 IP의 기록을 지워서 메모리가 계속 늘지 않게 합니다.
+setInterval(() => { const now = Date.now(); for (const [ip, list] of hits) if (!list.length || now - list[list.length - 1] >= RATE_WINDOW_MS) hits.delete(ip); }, RATE_WINDOW_MS).unref();
 
 function sendError(res, e) {
   if (e instanceof ClaudeError) return res.status(e.status).json({ message: e.message, code: e.code });
@@ -266,7 +288,9 @@ async function takeFactBatch(count, fromClient) {
   }
   return generateFactItems(count, fromClient);
 }
-router.post('/fact-questions', rateLimit, async (req, res) => {
+router.post('/fact-questions', rateLimitWithBank(req => bank.sampleFacts(
+  Math.min(10, Math.max(3, Number(req.body?.count) || 8)),
+  (Array.isArray(req.body?.avoid) ? req.body.avoid : []).slice(-40).map(t => String(t).slice(0, 120)))), async (req, res) => {
   const count = Math.min(10, Math.max(3, Number(req.body?.count) || 8));
   const fromClient = (Array.isArray(req.body?.avoid) ? req.body.avoid : []).slice(-40).map(t => String(t).slice(0, 120));
   let items = [], failure = null;
@@ -450,7 +474,10 @@ async function takeLitBatch(level, count, fromClient) {
   }
   return generateLitItems(level, count, fromClient);
 }
-router.post('/literacy-questions', rateLimit, async (req, res) => {
+router.post('/literacy-questions', rateLimitWithBank(req => bank.sampleLit(
+  cleanLevel(req.body?.level),
+  Math.min(12, Math.max(3, Number(req.body?.count) || LIT_BATCH_COUNT)),
+  (Array.isArray(req.body?.avoid) ? req.body.avoid : []).slice(-40).map(t => String(t).slice(0, 160)))), async (req, res) => {
   const count = Math.min(12, Math.max(3, Number(req.body?.count) || LIT_BATCH_COUNT));
   const level = cleanLevel(req.body?.level);
   const fromClient = (Array.isArray(req.body?.avoid) ? req.body.avoid : []).slice(-40).map(t => String(t).slice(0, 160));
