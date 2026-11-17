@@ -19,7 +19,7 @@ function config() {
   return {
     key: (process.env.ANTHROPIC_API_KEY || '').trim(),
     model: (process.env.CLAUDE_MODEL || '').trim() || 'claude-sonnet-5-5',
-    effort: (process.env.CLAUDE_EFFORT || '').trim() || 'medium',
+    effort: (process.env.CLAUDE_EFFORT || '').trim() || 'low',
     maxTokens: Number(process.env.CLAUDE_MAX_TOKENS) || 4096,
   };
 }
