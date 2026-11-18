@@ -2071,7 +2071,7 @@ function topUpLiteracy() {
   fetchLiteracy(15000).then(items => { if (items.length && game?.running) pool.push(...shuffle(items)); }).finally(() => { litFetching = false; });
 }
 async function launchGame() {
-  if (settings.topic === "가짜 판별" || settings.topic === "AI 윤리") {
+  if (settings.topic === "AI 윤리") {
     if (!(await ensureClaude())) { show("home"); return; }
   }
   playSfx("start");
@@ -2270,15 +2270,20 @@ const TERRITORY_NAMES = ["나", "리터러봇 1", "리터러봇 2", "리터러�
 const AI_ACCURACY = [0, .92, .88, .86, .84];
 let territoryState = null, territoryTimer = null;
 function clearTerritoryTimer() { if (territoryTimer) { clearTimeout(territoryTimer); territoryTimer = null; } }
+/* API 키가 있는지 조용히 확인합니다. 없으면 가짜 판별은 준비된 문제와 기본 규칙으로 진행해요. */
+async function claudeReady() {
+  try { const r = await fetch("/api/ai/status"); const d = await r.json(); return !!d.ready; } catch { return false; }
+}
 async function startTerritoryGame() {
   stop(); clearTerritoryTimer(); $("territoryEnd").hidden = true;
+  const noAI = !(await claudeReady());
   const count =Math.max(2, Math.min(5, settings.territoryAIs + 1)), n = count >= 4 ? 7 : 5, edges = [];
   for (let r = 0; r <= n; r++) for (let c = 0; c < n; c++) edges.push({ id: `h${r}_${c}`, r, c, dir: "h", owner: -1 });
   for (let r = 0; r < n; r++) for (let c = 0; c <= n; c++) edges.push({ id: `v${r}_${c}`, r, c, dir: "v", owner: -1 });
   const idx = {}; edges.forEach((e, i) => idx[e.id] = i);
   const st = territoryState = {
     count, size: n, edges, idx,
-    pool: [], seen: [], refilling: null, loadingQ: false, aiLoadingQ: false, aiPick: -1, genNotice: "",
+    pool: [], seen: [], refilling: null, loadingQ: false, aiLoadingQ: false, aiPick: -1, genNotice: "", noAI,
     boxes: Array(n * n).fill(-1), scores: Array(count).fill(0),
     correctAnswers: 0, attempts: 0, recordSaved: false, wrongNotes: [],
     selected: -1, question: null, finished: false, currentPlayer: 0,
@@ -2328,6 +2333,7 @@ function refillFacts(st) {
   if (st.refilling) return st.refilling;
   st.refilling = (async () => {
     try {
+      if (st.noAI) { await null; throw new Error("no_key"); } // 바로 끝나면 refilling 표시가 안 지워지므로 한 박자 쉬어요
       const r = await fetch("/api/ai/fact-questions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ count: FACT_BATCH, avoid: st.seen.slice(-40) }) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.message || "문제 생성 실패");
@@ -2340,7 +2346,7 @@ function refillFacts(st) {
       const backup = shuffle(fresh).slice(0, FACT_BATCH);
       backup.forEach(f => { st.pool.push({ ...f, src: "bank" }); st.seen.push(f.text); });
       bankSeenSave([...bankSeen(), ...backup.map(f => f.text)]);
-      st.genNotice = `AI 출제가 잠시 안 돼서 준비된 문제를 쓰고 있어요. (${e.message})`;
+      st.genNotice = st.noAI ? "📚 준비된 문제로 진행하고 있어요." : `AI 출제가 잠시 안 돼서 준비된 문제를 쓰고 있어요. (${e.message})`;
     } finally { st.refilling = null; }
   })();
   return st.refilling;
@@ -2587,7 +2593,8 @@ async function runAITurn() {
   st.lastFeedback = `🤖 ${TERRITORY_NAMES[p]}가 둘 선을 고르고, 자료가 진짜인지 가짜인지 생각하고 있어요…`;
   renderTerritory();
   const started = Date.now();
-  const result = await claudeDotsTurn(st, q.text).then(r => ({ ok: true, ...r }), err => ({ ok: false, err }));
+  const result = st.noAI ? { ok: false, offline: true }
+    : await claudeDotsTurn(st, q.text).then(r => ({ ok: true, ...r }), err => ({ ok: false, err }));
   if (territoryState !== st || st.finished || st.currentPlayer !== p) return; // 그사이 게임을 나갔으면 무시
   // AI가 고른 선을 보여 준 뒤 결과를 적용합니다. 연결 문제가 생기면 이번 차례만 기본 규칙으로 선을 고릅니다.
   const pickIdx = result.ok ? st.idx[result.line] : chooseAIEdge(options);
@@ -2612,7 +2619,9 @@ function applyAIJudgement(live, p, pickIdx, q, result) {
   } else {
     // 연결 문제가 생기면 게임이 멈추지 않도록 이번 차례만 임시로 판정합니다.
     correct = Math.random() < AI_ACCURACY[p] * (1 - miss);
-    said = `연결 문제로 이번 차례는 기본 규칙으로 선을 고르고 임시 판정했어요 (${result.err.message})`;
+    const guess = correct === (q.answer === "real") ? "진짜" : "가짜";
+    said = result.offline ? `"${guess}"라고 판별`
+      : `연결 문제로 이번 차례는 기본 규칙으로 선을 고르고 임시 판정했어요 (${result.err.message})`;
   }
   let gained = 0;
   if (correct) {
