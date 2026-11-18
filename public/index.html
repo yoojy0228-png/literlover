@@ -2360,7 +2360,7 @@ function edgeBoxes(e, n) {
 }
 function svgEl(tag, attrs = {}) { const el = document.createElementNS("http://www.w3.org/2000/svg", tag); for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v); return el; }
 /* 연필 칠하기: 칸 안을 지그재그로 빗금 치는 점 목록 (칸마다 같은 모양이 나오도록 seed 사용) */
-const PENCIL_MS = 1000;
+const PENCIL_MS = 600;
 function pencilHatch(x, y, w, h, seed) {
   const rows = 7, pts = [];
   const rnd = k => { const v = Math.sin(seed * 12.9898 + k * 78.233) * 43758.5453; return v - Math.floor(v); };
@@ -2498,7 +2498,7 @@ function advanceTurn() {
   const st = territoryState;
   st.currentPlayer = (st.currentPlayer + 1) % st.count;
   renderTerritory();
-  if (st.currentPlayer !== 0) territoryTimer = setTimeout(runAITurn, 700);
+  if (st.currentPlayer !== 0) territoryTimer = setTimeout(runAITurn, 300);
 }
 function answerTerritory(answer) {
   const st = territoryState;
@@ -2595,7 +2595,7 @@ async function runAITurn() {
   const lv = settings.diff;
   const finalIdx = dumbAI ? chooseDumbAIEdge(options) : lv === "easy" ? chooseEasyAIEdge(options) : lv === "hard" ? chooseHardAIEdge(options) : usable ? pickIdx : chooseAIEdge(options);
   st.aiPick = finalIdx; renderTerritory();
-  territoryTimer = setTimeout(() => applyAIJudgement(st, p, finalIdx, q, result), Math.max(700, 1200 - (Date.now() - started)));
+  territoryTimer = setTimeout(() => applyAIJudgement(st, p, finalIdx, q, result), Math.max(300, 600 - (Date.now() - started)));
 }
 function applyAIJudgement(live, p, pickIdx, q, result) {
   if (territoryState !== live || live.finished || live.currentPlayer !== p) return;
@@ -2625,8 +2625,8 @@ function applyAIJudgement(live, p, pickIdx, q, result) {
   }
   live.aiQuestions[p] = null; live.aiPick = -1;
   if (live.edges.every(e => e.owner >= 0)) { finishTerritory(); return; }
-  if (!correct || gained > 0) { renderTerritory(); territoryTimer = setTimeout(runAITurn, 1400); return; }
-  territoryTimer = setTimeout(advanceTurn, 900);
+  if (!correct || gained > 0) { renderTerritory(); territoryTimer = setTimeout(runAITurn, 600); return; }
+  territoryTimer = setTimeout(advanceTurn, 400);
 }
 function finishTerritory() {
   const st = territoryState; if (!st || st.finished) return;
