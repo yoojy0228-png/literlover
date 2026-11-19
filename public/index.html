@@ -121,18 +121,18 @@ footer{margin-top:auto;padding:1.4rem 0 1rem;text-align:center;font-family:var(-
 body[data-screen="game"] footer,body[data-screen="territory"] footer,body[data-screen="twenty"] footer{display:none}
 
 /* ---------- 버튼 ---------- */
-.primary,.secondary,.online-primary,.online-secondary,#closeRecords{
+.primary,.secondary,.online-primary,.online-secondary{
   --face:var(--rose);--txt:#fff;
   position:relative;display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
   min-height:3.3rem;padding:.6rem 1.6rem;border:var(--bw) solid var(--ink);border-radius:999px;
   background:var(--face);color:var(--txt);font-family:var(--font-display);font-size:1.2rem;line-height:1.2;letter-spacing:.02em;text-align:center;
   box-shadow:inset 0 -4px 0 rgba(0,0,0,.1),inset 0 2px 0 rgba(255,255,255,.35),0 5px 0 var(--ink);
   transition:transform .12s ease,box-shadow .12s ease,filter .12s ease;user-select:none}
-.primary:hover:not(:disabled),.secondary:hover:not(:disabled),.online-primary:hover:not(:disabled),.online-secondary:hover:not(:disabled),#closeRecords:hover{
+.primary:hover:not(:disabled),.secondary:hover:not(:disabled),.online-primary:hover:not(:disabled),.online-secondary:hover:not(:disabled){
   transform:translateY(-2px);filter:brightness(1.04);box-shadow:inset 0 -4px 0 rgba(0,0,0,.1),inset 0 2px 0 rgba(255,255,255,.35),0 7px 0 var(--ink)}
-.primary:active:not(:disabled),.secondary:active:not(:disabled),.online-primary:active:not(:disabled),.online-secondary:active:not(:disabled),#closeRecords:active{
+.primary:active:not(:disabled),.secondary:active:not(:disabled),.online-primary:active:not(:disabled),.online-secondary:active:not(:disabled){
   transform:translateY(5px);box-shadow:inset 0 -2px 0 rgba(0,0,0,.1),inset 0 2px 0 rgba(255,255,255,.3),0 0 0 var(--ink)}
-.secondary,.online-secondary,#closeRecords{--face:var(--card);--txt:var(--brown);min-height:3rem;padding:.5rem 1.3rem;font-size:1.05rem}
+.secondary,.online-secondary{--face:var(--card);--txt:var(--brown);min-height:3rem;padding:.5rem 1.3rem;font-size:1.05rem}
 .primary:disabled,.secondary:disabled,.online-primary:disabled,.online-secondary:disabled{
   --face:#eee1cc;--txt:#a8927a;border-color:#c9b69b;box-shadow:0 5px 0 #c9b69b}
 
@@ -438,26 +438,6 @@ body[data-screen="game"] footer,body[data-screen="territory"] footer,body[data-s
 #onlineOverlay[data-mode="dots"] #onlineQuizArea{grid-area:quiz;min-width:0}
 #onlineOverlay[data-mode="dots"] #onlineDotsCanvas{width:min(100%,max(260px,calc(100dvh - 340px)));max-width:none}
 
-/* ---------- 전적 창 ---------- */
-#recordsModal{position:fixed;inset:0;z-index:10020;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(75,46,28,.55);color:var(--ink)}
-.records-card{width:min(900px,100%);max-height:min(88dvh,850px);overflow:auto;padding:clamp(16px,3vw,28px);background:var(--paper);border:var(--bw) solid var(--ink);border-radius:var(--r-lg);box-shadow:0 8px 0 var(--ink)}
-.records-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
-.records-head h2{margin:0}
-.records-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:12px 0 20px}
-.records-metric{padding:12px 8px;text-align:center;background:var(--card);border:2px solid var(--line);border-radius:var(--r-sm)}
-.records-metric span{display:block;margin-bottom:5px;font-size:.8rem;color:var(--sub)}
-.records-metric strong{font-family:var(--font-display);font-weight:400;font-size:1.3rem;color:var(--rose)}
-.records-table-wrap{overflow-x:auto;background:var(--card);border:2px solid var(--line);border-radius:var(--r-sm)}
-.records-table{width:100%;min-width:600px;border-collapse:collapse;font-size:.92rem}
-.records-table th,.records-table td{padding:11px 10px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--line)}
-.records-table th{position:sticky;top:0;background:var(--gold-l);color:var(--brown);font-family:var(--font-display);font-weight:400}
-.records-table tr:last-child td{border-bottom:0}
-.record-result-win{color:var(--green);font-weight:800}
-.record-result-loss{color:var(--rose-d);font-weight:800}
-.record-result-draw{color:var(--gold-d);font-weight:800}
-#recordsEmpty{display:none;padding:30px 12px;text-align:center;color:var(--sub)}
-#recordsError{margin:8px 0;white-space:pre-wrap;color:var(--rose-d)}
-
 /* ---------- 문제 생성 중 표시 ---------- */
 .gen-overlay{position:fixed;inset:0;z-index:20000;display:flex;align-items:center;justify-content:center;padding:1rem;background:rgba(255,249,238,.82);backdrop-filter:blur(4px)}
 .gen-card{width:min(420px,100%);padding:1.8rem 1.6rem 1.5rem;text-align:center;background:var(--card);border:var(--bw) solid var(--ink);border-radius:var(--r-lg);box-shadow:0 8px 0 var(--ink)}
@@ -673,7 +653,6 @@ footer{padding:.5rem 0 .7rem}
   .online-actions{grid-template-columns:1fr}
   .twenty-side{grid-template-columns:1fr}
   .tw-entry{max-width:92%}
-  .records-summary{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 /* 휴대폰: 도트 앤 박스와 홈을 한 화면에 맞춤 */
 @media(max-width:860px){
@@ -727,11 +706,10 @@ b,strong,h1,h2,h3{font-weight:300!important}
 @supports not (height:100dvh){
   body,.app{height:100vh}
   .rules-poster{max-height:92vh}
-  .records-card{max-height:min(88vh,850px)}
 }
 /* 터치: 더블탭 확대 없이 바로 반응, 당겨서 새로고침 방지 */
 html,body{overscroll-behavior:none}
-.screen.active,.rules-poster,.records-card,#onlineOverlay,.tw-log,.menu-dropdown{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.screen.active,.rules-poster,#onlineOverlay,.tw-log,.menu-dropdown{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 button,a,input,select,label,[role="button"],.territory-board svg,#onlineDotsCanvas{touch-action:manipulation}
 svg [role="button"]{-webkit-tap-highlight-color:transparent}
 button,.topic-card,.choice{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
@@ -745,7 +723,7 @@ input,select,textarea{font-size:max(16px,1.05rem)!important}
 
 /* 손가락 터치 기기: 누른 뒤 hover 모양이 남지 않게 */
 @media (hover:none){
-  .primary:hover:not(:disabled),.secondary:hover:not(:disabled),.online-primary:hover:not(:disabled),.online-secondary:hover:not(:disabled),#closeRecords:hover,
+  .primary:hover:not(:disabled),.secondary:hover:not(:disabled),.online-primary:hover:not(:disabled),.online-secondary:hover:not(:disabled),
   #onlineEntry:hover,.menu-toggle:hover,.topic-card:hover,.choice:hover,.step-btn:hover:not(:disabled),.online-option:hover:not(:disabled){transform:none;filter:none}
   .topic-card:hover{box-shadow:0 7px 0 var(--ink)}
   .choice:hover:not(.selected){border-color:var(--line-2);box-shadow:0 5px 0 var(--line-2)}
@@ -776,7 +754,7 @@ input,select,textarea{font-size:max(16px,1.05rem)!important}
 
   /* 버튼: 손가락 크기는 유지하되 화면에 맞게 */
   .primary,.online-primary{min-height:3.1rem;padding:.5rem 1.1rem;font-size:1.1rem}
-  .secondary,.online-secondary,#closeRecords{min-height:2.9rem;padding:.45rem 1rem;font-size:1rem}
+  .secondary,.online-secondary{min-height:2.9rem;padding:.45rem 1rem;font-size:1rem}
   .actions{gap:.6rem}
   .actions .secondary{flex:none}
 
@@ -860,12 +838,10 @@ input,select,textarea{font-size:max(16px,1.05rem)!important}
   #twEnd .closing-line{font-size:1.15rem;padding:.6rem .8rem}
   .tw-end-card{padding:1.2rem 1rem}
 
-  /* 온라인 대전 · 전적 */
+  /* 온라인 대전 */
   .online-card{padding:1rem .85rem;border-radius:var(--r)}
   .online-option{min-height:3.2rem;font-size:1rem;padding:.6rem .8rem}
   #onlineQuestion{font-size:1.1rem;padding:.8rem .9rem}
-  .records-head h2{font-size:1.3rem}
-  .records-metric strong{font-size:1.1rem}
 }
 
 /* 가로로 눕힌 휴대폰: 높이가 낮으니 머리·여백을 줄임 */
@@ -981,8 +957,6 @@ button,.online-status,.online-score,.territory-player b,.tw-pattern{overflow-wra
 #twentyLog{max-height:min(36vh,22rem)!important;overflow-wrap:anywhere}
 .rules-overlay,.gen-overlay,.tw-end{overflow:auto}
 .rules-poster{width:min(68.75rem,100%);max-height:calc(var(--app-height) - 2rem);flex:none;margin:auto}
-.records-card{width:min(56.25rem,100%);max-height:calc(var(--app-height) - 2rem);margin:auto;flex:none}
-.records-head{flex-wrap:wrap}
 .gen-card{width:min(26.25rem,100%);max-height:calc(var(--app-height) - 2rem);overflow:auto;margin:auto;flex:none}
 .tw-end-card{width:min(32.5rem,100%);max-height:100%;overflow:auto;margin:auto;flex:none}
 #twEnd .tw-end-card{width:min(56.25rem,100%)}
@@ -1025,7 +999,7 @@ button,.online-status,.online-score,.territory-player b,.tw-pattern{overflow-wra
 @media (max-height:500px) and (orientation:landscape){
   .home-logo img{max-height:30vh}
   .territory-question{position:static}
-  .rules-poster,.records-card{max-height:calc(var(--app-height) - 1rem)}
+  .rules-poster{max-height:calc(var(--app-height) - 1rem)}
 }
 @media (pointer:coarse){
   button{min-height:44px}
@@ -1035,7 +1009,7 @@ button,.online-status,.online-score,.territory-player b,.tw-pattern{overflow-wra
 /* ==========================================================
    휴대폰 전체 화면: 페이지가 스크롤되지 않게 한 화면에 맞춤
    autoFit(fitPhone)이 넘치는 만큼 --fit을 줄여 전체 크기를 비례 축소합니다.
-   길이가 정해지지 않은 목록(오답 노트·대화 기록·전적)만 그 칸 안에서 넘겨 봅니다.
+   길이가 정해지지 않은 목록(오답 노트·대화 기록)만 그 칸 안에서 넘겨 봅니다.
    ========================================================== */
 html{font-size:calc(var(--base-font-size)*var(--fs)*var(--fit,1))}
 @media (max-width:860px), (max-height:560px){
@@ -1094,7 +1068,7 @@ html{font-size:calc(var(--base-font-size)*var(--fs)*var(--fit,1))}
   .poster-section:has(+ .rule-steps)::after{content:"← 옆으로 넘겨 보기 →";margin-left:auto;font-size:.75rem;color:var(--sub);letter-spacing:0}
 
   /* 게임이 끝난 뒤 창: 오답 목록만 안에서 넘겨 보기 */
-  .tw-end,.rules-overlay,.gen-overlay,#recordsModal{overscroll-behavior:contain}
+  .tw-end,.rules-overlay,.gen-overlay{overscroll-behavior:contain}
   .tw-end-card{display:flex;flex-direction:column;max-height:calc(var(--app-height) - 1.5rem)}
   .tw-end-card>*{flex:none}
   #territoryWrongList{flex:1 1 auto;min-height:4rem;overflow-y:auto;overscroll-behavior:contain}
@@ -1107,10 +1081,6 @@ html{font-size:calc(var(--base-font-size)*var(--fs)*var(--fit,1))}
   .tw-pattern{margin:.25rem 0 0;font-size:1.2rem;letter-spacing:.06em}
   .tw-giveup{grid-column:1/-1;min-height:2.4rem!important}
 
-  /* 전적 창: 표만 안에서 넘겨 보기 */
-  .records-card{display:flex;flex-direction:column}
-  .records-card>*{flex:none}
-  .records-card .records-table-wrap{flex:1 1 auto;min-height:5rem;overflow:auto}
 
   /* 온라인 대전 창 */
   #onlineOverlay{overscroll-behavior:contain}
@@ -1771,7 +1741,7 @@ function fitGamePanels() {
 /* 휴대폰: 화면(또는 열린 창)이 넘치면 여백을 줄이고, 그래도 넘치면 전체 크기(rem)를 조금씩 줄여 스크롤 없이 한 화면에 맞춥니다. */
 const PHONE_FIT = "(max-width:860px), (max-height:560px)";
 const MIN_FIT = .7, MIN_FIT_DESKTOP = .5; // 컴퓨터 화면은 글씨 크기를 키워도 스크롤이 안 생기게 더 줄일 수 있어요
-const FIT_POPUPS = [".rules-poster", ".records-card", "#onlineOverlay", ".gen-card", "#twEnd .tw-end-card", "#territoryEnd .tw-end-card", "#phoneWarnPopup>div"];
+const FIT_POPUPS = [".rules-poster", "#onlineOverlay", ".gen-card", "#twEnd .tw-end-card", "#territoryEnd .tw-end-card", "#phoneWarnPopup>div"];
 function fitBoxes() {
   const shown = e => e && !e.closest("[hidden]") && e.getClientRects().length;
   const popups = FIT_POPUPS.map(s => document.querySelector(s)).filter(shown);
@@ -2210,11 +2180,6 @@ const CLOSING_LINES = {
 };
 function endGame(title, message) {
   if (!game || !game.running) return;
-  // 로그인 계정에 싱글/AI 대전 결과 저장
-  try {
-    const token = localStorage.getItem("literlover-token");
-    if (token) fetch("/api/record", { method:"POST", headers:{"Content-Type":"application/json","Authorization":"Bearer "+token}, body:JSON.stringify({mode:settings.mode==="ai"?"ai":"single",topic:settings.topic,score:game.score,aiScore:game.aiScore||0,correct:game.correct||0,attempts:game.attempts||0,result:title}) }).catch(()=>{});
-  } catch (_) {}
   playSfx(title === "YOU WIN" || title === "QUIZ COMPLETE" ? "win" : (title === "AI WIN" || title === "GAME OVER") ? "lose" : "click");
   game.running = false; locked = true; stop(); buttons.forEach(b => b.disabled = true);
   $("resultTitle").textContent = title; $("resultMessage").textContent = message;
@@ -2285,7 +2250,7 @@ async function startTerritoryGame() {
     count, size: n, edges, idx,
     pool: [], seen: [], refilling: null, loadingQ: false, aiLoadingQ: false, aiPick: -1, genNotice: "", noAI,
     boxes: Array(n * n).fill(-1), scores: Array(count).fill(0),
-    correctAnswers: 0, attempts: 0, recordSaved: false, wrongNotes: [],
+    correctAnswers: 0, attempts: 0, wrongNotes: [],
     selected: -1, question: null, finished: false, currentPlayer: 0,
     aiStatus: Array(count).fill("대기 중"), aiQuestions: Array(count).fill(null),
     lastFeedback: "정답이면 선 연결, 오답이면 -1점!"
@@ -2643,20 +2608,6 @@ function finishTerritory() {
   const max = Math.max(...st.scores), winners = st.scores.map((v, i) => v === max ? TERRITORY_NAMES[i] : null).filter(Boolean);
   st.lastFeedback = `승리: ${winners.join(", ")} · 최종 점수 ${max}점입니다.`;
   playSfx(winners.includes("나") ? "win" : "lose");
-  // 가짜 판별(AI 도트 앤 박스) 종료 시 로그인 계정의 PostgreSQL 전적에 저장
-  try {
-    const token = localStorage.getItem("literlover-token");
-    if (token && !st.recordSaved) {
-      st.recordSaved = true;
-      const outcome = winners.includes("나") ? (winners.length > 1 ? "DRAW" : "YOU WIN") : "AI WIN";
-      const bestAI = Math.max(0, ...st.scores.slice(1));
-      fetch("/api/record", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
-        body: JSON.stringify({ mode: "ai", topic: "가짜 판별", score: st.scores[0], aiScore: bestAI, scores: st.scores.slice(0, st.count), scoreNames: TERRITORY_NAMES.slice(0, st.count), correct: st.correctAnswers || 0, attempts: st.attempts || 0, result: outcome })
-      }).then(r => { if (!r.ok) console.error("가짜 판별 전적 저장 실패:", r.status); }).catch(e => console.error("가짜 판별 전적 저장 실패:", e));
-    }
-  } catch (e) { console.error("가짜 판별 전적 저장 실패:", e); }
   renderTerritory();
   const won = winners.includes("나");
   $("territoryEndIcon").textContent = won ? (winners.length > 1 ? "🤝" : "🎉") : "🤖";
@@ -2919,7 +2870,6 @@ $("twentyHome").addEventListener("click", () => { tw.gen++; hideGenerating(true)
     if (sock && sock.connected) return true;
     try { await loadSocketLib(); } catch { alert("온라인 서버에 연결할 수 없습니다. 대전 서버(Node + socket.io)가 실행 중인지 확인하세요."); return false; }
     sock = io({ auth: {
-      token: localStorage.getItem("literlover-token") || "",
       name: (document.getElementById("onlineName")?.value || "플레이어").trim().slice(0,18)
     } });
     bindSocket();
@@ -3232,37 +3182,6 @@ $("twentyHome").addEventListener("click", () => { tw.gen++; hideGenerating(true)
 </script>
 
 
-<div id="recordsModal" hidden role="dialog" aria-modal="true" aria-labelledby="recordsTitle">
-  <section class="records-card">
-    <div class="records-head">
-      <div><h2 id="recordsTitle">내 게임 전적</h2><div style="color:#8a6d58;font-size:.9rem;margin-top:5px">로그인한 계정의 최근 게임 기록</div></div>
-      <button id="closeRecords" type="button" aria-label="전적 창 닫기">닫기 ✕</button>
-    </div>
-    <div class="records-summary" id="recordsSummary"></div>
-    <p id="recordsError" role="alert"></p>
-    <div class="records-table-wrap">
-      <table class="records-table">
-        <thead><tr><th>날짜</th><th>게임</th><th>주제</th><th>결과</th><th>점수</th></tr></thead>
-        <tbody id="recordsRows"></tbody>
-      </table>
-      <div id="recordsEmpty">아직 저장된 전적이 없어요. 게임을 플레이해 보세요!</div>
-    </div>
-  </section>
-</div>
-
-<script>
-/* 로그인/회원가입 제거: 게임을 바로 시작하는 게스트 모드 */
-(() => {
-  document.body.classList.add('authenticated');
-  const gate = document.getElementById('authGate');
-  if (gate) gate.remove();
-  const account = document.getElementById('accountWidget');
-  if (account) account.remove();
-  const token = localStorage.getItem('literlover-token');
-  // 이전 로그인 정보는 사용하지 않습니다.
-  if (token) localStorage.removeItem('literlover-token');
-})();
-</script>
 
 <!-- 도트 앤 박스 비밀 코드: 130218 입력 시 한 칸만 남기고 내 칸으로 채움 -->
 <script>
