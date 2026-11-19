@@ -2704,6 +2704,11 @@ async function twApi(path, body) {
 // 전화번호(휴대폰·지역번호·+82 형식, 구분 기호/공백 포함)가 들어 있으면 경고창을 띄우고 true를 반환합니다.
 function warnPhone(text) {
   const raw = String(text || "");
+  // 이메일 주소: 아이디@도메인.최상위도메인 (@와 점 앞뒤의 공백 허용, 예: abc @ naver . com)
+  if (/[A-Za-z0-9._%+\-]+\s*[@＠]\s*[A-Za-z0-9\-]+(?:\s*\.\s*[A-Za-z0-9\-]+)*\s*\.\s*[A-Za-z]{2,}/.test(raw)) {
+    showPhonePopup("이메일");
+    return true;
+  }
   // 주민등록번호: 생년월일 6자리 + 성별/세기 1자리(1~8) + 6자리 (구분 기호/공백 허용)
   if (/(?<!\d)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])[\s.\-_]*[1-8](?:[\s.\-_]*\d){6}(?!\d)/.test(raw)) {
     showPhonePopup("주민등록번호");
@@ -2722,7 +2727,7 @@ function warnPhone(text) {
   }
   return false;
 }
-// 개인정보(전화번호·주민등록번호) 경고 팝업 (alert 대신 화면 가운데에 표시)
+// 개인정보(이메일·전화번호·주민등록번호·생년월일) 경고 팝업 (alert 대신 화면 가운데에 표시)
 function showPhonePopup(kind) {
   kind = kind || "전화번호";
   const batchim = (kind.charCodeAt(kind.length - 1) - 0xAC00) % 28 !== 0;
