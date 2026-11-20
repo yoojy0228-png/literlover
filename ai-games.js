@@ -92,7 +92,7 @@ function similar(a, b) {
 const hits = new Map();
 const RATE_WINDOW_MS = 60000;
 // IP 하나가 1분에 보낼 수 있는 AI 요청 수. 같은 와이파이로 많은 사람이 접속하는 행사면 환경변수 RATE_LIMIT_PER_MIN으로 크게 올리세요.
-const RATE_MAX = Number(process.env.RATE_LIMIT_PER_MIN) || 120;
+const RATE_MAX = Number(process.env.RATE_LIMIT_PER_MIN) || 99999;
 // Render는 Cloudflare 뒤에 있어서 req.ip가 모든 사용자에게 같은 프록시 주소로 보입니다.
 // Cloudflare가 항상 덮어써서 붙여 주는 CF-Connecting-IP 헤더로 실제 접속자를 구분합니다. (없으면 req.ip)
 const clientIp = req => String(req.headers?.['cf-connecting-ip'] || req.ip || 'unknown');
