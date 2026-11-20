@@ -1511,8 +1511,8 @@ const BANK = {
   {q:"참석할지 안 할지를 알려 달라는 안내문이다. 알맞은 표현은?",a:["참석 여부","참석 유무"],c:0,e:"'여부'는 ~인지 아닌지를, '유무'는 있음과 없음을 뜻한다."},
   {q:"'심심한 사과의 말씀을 드립니다.'에서 '심심한'의 뜻은?",a:["깊고 간절한","지루하고 따분한"],c:0,e:"여기서 '심심(甚深)하다'는 마음의 표현이 매우 깊고 간절하다는 뜻이다."},
   {q:"'사흘 뒤에 만나자.'에서 '사흘'은 며칠인가?",a:["3일","4일"],c:0,e:"사흘은 3일, 나흘은 4일이다."},
-  {q:"시험 합격한 사람의 비율을 나타내는 알맞은 표기는?",a:["합격률","합격율"],c:0,e:"받침이 없거나 'ㄴ' 받침 뒤에서는 '율'이 아니라 '률'을 쓴다."},
-  {q:"오늘이 몇 월 몇 일인지 물으려 한다. 알맞은 표현은?",a:["오늘 몇일이야?","오늘 며칠이야?"],c:1,e:"'몇일'이라는 말은 없고 '며칠'이 표준어이다."},
+  {q:"시험 합격한 사람의 비율을 나타내는 알맞은 표기는?",a:["합격률","합격율"],c:0,e:"모음이나 'ㄴ' 받침 뒤에서는 '율', 그 밖의 받침 뒤에서는 '률'을 쓴다. '합격'은 'ㄱ' 받침이므로 '합격률'이다."},
+  {q:"친구에게 오늘 날짜를 물으려 한다. 알맞은 표현은?",a:["오늘 몇일이야?","오늘 며칠이야?"],c:1,e:"'몇일'이라는 말은 없고 '며칠'이 표준어이다."},
   {q:"여행 생각에 마음이 들떠 두근거린다. 알맞은 표현은?",a:["설레는 마음","설레이는 마음"],c:0,e:"기본형은 '설레다'이므로 '설레는'이 바르다."},
   {q:"연극에서 맡은 일을 가리키는 알맞은 표기는?",a:["역활","역할"],c:1,e:"'역할'이 바른 표기이다."},
   {q:"이유는 모르겠지만 오늘따라 기분이 이상하다. 알맞은 표현은?",a:["웬지","왠지"],c:1,e:"'왠지'는 '왜인지'의 준말이다. '웬'은 '어찌 된'을 뜻한다."},
@@ -2435,7 +2435,7 @@ function renderTerritory() {
   $("territoryGen").hidden = !generating; $("territoryPrompt").hidden = generating;
   $("territoryGenMsg").textContent = st.loadingQ ? "AI가 새 문제를 만들고 있어요…" : "AI가 AI 차례에 쓸 문제를 만들고 있어요…";
   const shownQ = st.question || (st.currentPlayer !== 0 ? st.aiQuestions[st.currentPlayer] : null);
-  $("territoryBadge").textContent = shownQ ? (shownQ.src === "claude" ? "✨ AI가 방금 만든 문제" : "📚 준비된 문제") : (st.currentPlayer === 0 ? "내 차례 · 선을 골라 문제 받기" : "🤖 AI 차례");
+  $("territoryBadge").textContent = shownQ ? (shownQ.src === "claude" ? "✨ AI가 만든 문제" : "📚 준비된 문제") : (st.currentPlayer === 0 ? "내 차례 · 선을 골라 문제 받기" : "🤖 AI 차례");
   $("realAnswer").disabled = !canAnswer; $("fakeAnswer").disabled = !canAnswer;
   syncAiLoading();
   $("territoryHint").textContent = st.genNotice ? st.genNotice : st.finished ? "점수가 가장 높은 플레이어가 승리합니다." : "정답이면 선 연결, 오답이면 -1점!";
