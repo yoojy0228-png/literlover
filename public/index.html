@@ -2228,7 +2228,7 @@ function endGame(title, message) {
   show("result");
 }
 buttons.forEach((b, i) => b.addEventListener("click", () => choose(i)));
-$("retry").addEventListener("click", () => show("home"));
+$("retry").addEventListener("click", () => launchGame());
 $("quit").addEventListener("click", () => endGame("GAME ENDED", "게임을 종료했습니다."));
 $("homeBtn").addEventListener("click", () => { if (game) game.running = false; stop(); show("home"); });
 
