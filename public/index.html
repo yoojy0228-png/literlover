@@ -1043,6 +1043,9 @@ html{font-size:calc(var(--base-font-size)*var(--fs)*var(--fit,1))}
   #result .results,#result .panel>p,#result .section-title,#result .actions{flex:none}
   #result .section-title{margin:.5rem 0 .4rem}
   #result .review-list{flex:1 1 auto;min-height:6rem;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;align-content:start}
+  /* 오답 카드가 줄어들어 서로 겹치지 않게: 각 카드는 내용 높이만큼 차지 */
+  #result .review-list{grid-auto-rows:max-content}
+  #result .review{flex:none;min-height:auto;height:auto}
   #result .actions{margin-top:.6rem}
   #result #resultTitle{font-size:1.6rem;margin:0}
 
